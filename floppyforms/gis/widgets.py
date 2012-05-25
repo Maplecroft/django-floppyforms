@@ -13,7 +13,8 @@ __all__ = ('GeometryWidget', 'GeometryCollectionWidget',
            'LineStringWidget', 'MultiLineStringWidget',
            'PolygonWidget', 'MultiPolygonWidget',
            'BaseGeometryWidget', 'BaseMetacartaWidget',
-           'BaseOsmWidget', 'BaseGMapWidget')
+           'BaseOsmWidget', 'BaseGMapWidget',
+           'BaseLeafletWidget',)
 
 
 class BaseGeometryWidget(forms.Textarea):
@@ -133,6 +134,23 @@ class PolygonWidget(BaseGeometryWidget):
 class MultiPolygonWidget(PolygonWidget):
     is_collection = True
     geom_type = 'MULTIPOLYGON'
+
+
+class BaseLeafletWidget(BaseGeometryWidget):
+    """A Leaflet base widget"""
+    map_srid = 4326
+    template_name = 'floppyforms/gis/leaflet.html'
+
+    class Media:
+        js = (
+            'floppyforms/js/LeafletWidget.js',
+            'http://code.leafletjs.com/leaflet-0.3.1/leaflet.js',
+        )
+        css = ({
+            'all': (
+                'http://code.leafletjs.com/leaflet-0.3.1/leaflet.css',
+            )
+        })
 
 
 class BaseMetacartaWidget(BaseGeometryWidget):
