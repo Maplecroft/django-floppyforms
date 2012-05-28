@@ -1,24 +1,20 @@
-<div id="{{ attrs.id }}_map" style="height: 200px" ></div>
+<style type="text/css">
+    .{{ attrs.id }}_util { float: right; margin-left: 5px; cursor: pointer;}
+	#{{ attrs.id }}_map { width: {{ map_width }}px; height: {{ map_height }}px; }
+	#{{ attrs.id }}_map .aligned label { float: inherit; }
+
+</style>
+
+<span class="{{ attrs.id }}_util" id="{{ attrs.id }}_clear">Clear all features</span>
+<span class="{{ attrs.id }}_util" id="{{ attrs.id }}_undo">Undo last change</span>
+<div id="{{ attrs.id }}_map"></div>
 <textarea name="{{ name }}"{% if required %} required{% endif %}{% include "floppyforms/attrs.html" %}>{{ value }}</textarea>
 <script type="text/javascript">
-//    var map = new L.Map("{{ attrs.id }}");
-//    var osmUrl = 'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-//    osm = new L.TileLayer(osmUrl, {minZoom: 1});
-//    map.setView(new L.LatLng(0, 0), 1).addLayer(osm);
-//
-//    // the leaflet way to create a custom marker icon
-//    var icon = new(L.Icon.extend({
-//      iconUrl: '{{ STATIC_URL }}leaflet/images/marker.png',
-//      shadowUrl: null, // TODO write marker shadow support, if req'd
-//      iconSize: new L.Point(10, 10),
-//      iconAnchor: new L.Point(5, 5)
-//    }))();
-//    
     {% block map_options %}var map_options = {};{% endblock %}
     {% block options %}var options = {
         geom_type: '{{ geom_type }}',
         url: 'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-        id: '{{ attrs.id }}_map',
+        id: '{{ attrs.id }}',
         is_collection: {{ is_collection|yesno:"true,false" }},
         is_linestring: {{ is_linestring|yesno:"true,false" }},
         is_point: {{ is_point|yesno:"true,false" }},
