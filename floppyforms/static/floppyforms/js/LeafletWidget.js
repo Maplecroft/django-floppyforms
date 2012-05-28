@@ -100,8 +100,8 @@ LeafletWidget = (function() {
     _ref = data.geonames;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       geoname = _ref[_i];
-      item = this.$("<li>" + geoname.name + "</li>");
-      item.data('lat', geoname.lat).data('lng', geoname.lng).addClass('result');
+      item = this.$("<li>[" + geoname.countryCode + "] " + geoname.name + "</li>");
+      item.data('lat', geoname.lat).data('lng', geoname.lng).addClass('result').attr('title', JSON.stringify(geoname));
       item.click(function() {
         item = self.$(this);
         self.map.setView(new L.LatLng(item.data('lat'), item.data('lng')), 12);

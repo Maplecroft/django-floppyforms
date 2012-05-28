@@ -2,7 +2,7 @@
     .{{ attrs.id }}_util { float: right; margin-left: 5px; cursor: pointer;}
 	#{{ attrs.id }}_map { width: {{ map_width }}px; height: {{ map_height }}px; }
 	#{{ attrs.id }}_map .aligned label { float: inherit; }
-    #{{ attrs.id }}_search_result_wrapper { display: none; float: right; width: 100px; height 100px; overflow-y: scroll; z-index: 1000; }
+    #{{ attrs.id }}_search_result_wrapper { display: none; float: right; width: 100px; height: 100px; overflow-y: scroll; z-index: 1000; position: absolute; top: 25px; left: {{ map_width }}px; background-color: white; padding: 5px;}
 
 </style>
 

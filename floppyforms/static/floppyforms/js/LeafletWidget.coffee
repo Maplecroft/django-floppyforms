@@ -58,11 +58,12 @@ class LeafletWidget
     @results.html("")
     self = @
     for geoname in data.geonames
-      item = @$("<li>#{ geoname.name }</li>")
+      item = @$("<li>[#{ geoname.countryCode }] #{ geoname.name }</li>")
       item
         .data('lat', geoname.lat)
         .data('lng', geoname.lng)
         .addClass('result')
+        .attr('title', JSON.stringify(geoname))
       item.click ->
         item = self.$(@)
         self.map.setView(new L.LatLng(item.data('lat'), item.data('lng')), 12)
