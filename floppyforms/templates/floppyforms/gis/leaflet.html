@@ -1,5 +1,5 @@
 <div id="{{ attrs.id }}_map" style="height: 200px" ></div>
-{% include "floppyforms/textarea.html" %}
+<textarea name="{{ name }}"{% if required %} required{% endif %}{% include "floppyforms/attrs.html" %}>{{ value }}</textarea>
 <script type="text/javascript">
 //    var map = new L.Map("{{ attrs.id }}");
 //    var osmUrl = 'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',

@@ -35,7 +35,9 @@ class BaseGeometryWidget(forms.Textarea):
     is_collection = False
     geom_type = 'GEOMETRY'
 
-    map_attrs = ('map_width', 'map_height', 'map_srid', 'display_wkt')
+    map_attrs = (
+        'map_width', 'map_height', 'map_srid', 'display_wkt', 'as_geojson',
+    )
 
     def __init__(self, *args, **kwargs):
         super(BaseGeometryWidget, self).__init__(*args, **kwargs)
@@ -73,6 +75,7 @@ class BaseGeometryWidget(forms.Textarea):
 
         # Defaulting the WKT value to a blank string
         wkt = ''
+        geojson = ''
         if value:
             srid = self.map_srid
             if value.srid != srid:
@@ -80,11 +83,18 @@ class BaseGeometryWidget(forms.Textarea):
                     ogr = value.ogr
                     ogr.transform(srid)
                     wkt = ogr.wkt
+                    geojson = ogr.geojson
                 except gdal.OGRException:
                     pass  # wkt left as an empty string
             else:
                 wkt = value.wkt
-        context = super(BaseGeometryWidget, self).get_context(name, wkt, attrs)
+                geojson = value.geojson
+        if self.as_geojson:
+            context = super(BaseGeometryWidget, self).get_context(
+                name, geojson, attrs)
+        else:
+            context = super(BaseGeometryWidget, self).get_context(
+                name, wkt, attrs)
         context['module'] = 'map_%s' % name.replace('-', '_')
         context['name'] = name
         # Django >= 1.4 doesn't have ADMIN_MEDIA_PREFIX anymore, we must
@@ -95,6 +105,11 @@ class BaseGeometryWidget(forms.Textarea):
             context['ADMIN_MEDIA_PREFIX'] = settings.STATIC_URL + 'admin/'
         context['LANGUAGE_BIDI'] = translation.get_language_bidi()
         return context
+
+    def render(self, name, value, attrs=None):
+        _value = value
+        print _value
+        return super(BaseGeometryWidget, self).render(name, _value, attrs)
 
 
 class GeometryWidget(BaseGeometryWidget):
@@ -140,6 +155,7 @@ class BaseLeafletWidget(BaseGeometryWidget):
     """A Leaflet base widget"""
     map_srid = 4326
     template_name = 'floppyforms/gis/leaflet.html'
+    as_geojson = True
 
     class Media:
         js = (
