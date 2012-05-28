@@ -1,10 +1,16 @@
 class LeafletWidget
 
   constructor: (@options) ->
+    @$ = $ or django.jQuery
     @map = new L.Map(@options.map_id)
-    @textarea = document.getElementById("#{ @options.id }")
-    @clear = document.getElementById("#{ @options.id }_clear")
-    @undo = document.getElementById("#{ @options.id }_undo")
+    @textarea = @$("##{ @options.id }")
+    @clear = @$("##{ @options.id }_clear")
+    @undo = @$("##{ @options.id }_undo")
+    @search = @$("##{ @options.id }_search")
+    @searchBtn = @$("##{ @options.id }_searchBtn")
+    @results = @$("##{ options.id }_search_result")
+
+    @searchURL = "http://ws.geonames.org/searchJSON?q={{LOCATION}}&maxRows=100"
 
     @geojson = @getJSON()
 
@@ -18,19 +24,20 @@ class LeafletWidget
     @refreshLayer()
 
     @map.on 'click', @mapClick
-    @clear.onclick = @clearFeatures
-    @undo.onclick = @undoChange
+    @clear.bind('click', @clearFeatures)
+    @undo.bind('click', @undoChange)
+    @searchBtn.bind('click', @findLocations)
 
   getJSON: =>
     # get json or
-      if @textarea.value
-        JSON.parse(@textarea.value)
+      if @textarea.val()
+        JSON.parse(@textarea.val())
       else
         type: @options.geom_type
         coordinates: []
 
   refreshLayer: ->
-    @textarea.value = JSON.stringify(@geojson)
+    @textarea.val(JSON.stringify(@geojson))
     @marker_group.clearLayers()
     if @geojson.coordinates.length > 0
       @marker_group.addGeoJSON(@geojson)
@@ -46,6 +53,48 @@ class LeafletWidget
   undoChange: =>
     @geojson = @undo_geojson
     @refreshLayer()
+
+  foundLocations: (data) =>
+    @results.html("")
+    self = @
+    for geoname in data.geonames
+      item = @$("<li>#{ geoname.name }</li>")
+      item
+        .data('lat', geoname.lat)
+        .data('lng', geoname.lng)
+        .addClass('result')
+      item.click ->
+        item = self.$(@)
+        self.map.setView(new L.LatLng(item.data('lat'), item.data('lng')), 12)
+        self.results.parent().fadeOut()
+
+      item.hover ->
+        item = self.$(@)
+        point = new L.LatLng(item.data('lat'), item.data('lng'))
+        if not item.data('marker')
+          marker = new L.Marker(point)
+          item.data('marker', marker)
+        else
+          marker = item.data('marker')
+        self.map.addLayer(marker)
+        if not self.map.getBounds().contains(point)
+          bounds = new L.LatLngBounds(point, self.map.getCenter())
+          self.map.fitBounds(bounds)
+      , ->
+        item = self.$(@)
+        marker = item.data('marker')
+        self.map.removeLayer(marker)
+
+      @results.append(item)
+    @results.parent().show()
+
+  findLocations: =>
+    term = @search.val()
+    url = @searchURL.replace('{{LOCATION}}', encodeURIComponent(term))
+    self = @
+    @$.ajax url,
+      dataType: 'jsonp'
+      success: @foundLocations
 
   doPoint: (e, add) =>
     if add

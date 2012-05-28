@@ -2,11 +2,15 @@
     .{{ attrs.id }}_util { float: right; margin-left: 5px; cursor: pointer;}
 	#{{ attrs.id }}_map { width: {{ map_width }}px; height: {{ map_height }}px; }
 	#{{ attrs.id }}_map .aligned label { float: inherit; }
+    #{{ attrs.id }}_search_result_wrapper { display: none; float: right; width: 100px; height 100px; overflow-y: scroll; z-index: 1000; }
 
 </style>
 
+<span class="{{ attrs.id }}_util" id="{{ attrs.id }}_searchBtn">Find</span>
+<input class="{{ attrs.id }}_util" id="{{ attrs.id }}_search" />
 <span class="{{ attrs.id }}_util" id="{{ attrs.id }}_clear">Clear all features</span>
 <span class="{{ attrs.id }}_util" id="{{ attrs.id }}_undo">Undo last change</span>
+<div id="{{ attrs.id }}_search_result_wrapper"><ul id="{{ attrs.id }}_search_result"></ul></div>
 <div id="{{ attrs.id }}_map"></div>
 <textarea name="{{ name }}"{% if required %} required{% endif %}{% include "floppyforms/attrs.html" %}>{{ value }}</textarea>
 <script type="text/javascript">

@@ -159,8 +159,8 @@ class BaseLeafletWidget(BaseGeometryWidget):
 
     class Media:
         js = (
-            'floppyforms/js/LeafletWidget.js',
             'http://code.leafletjs.com/leaflet-0.3.1/leaflet.js',
+            'floppyforms/js/LeafletWidget.js',
         )
         css = ({
             'all': (
