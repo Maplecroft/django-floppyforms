@@ -26,6 +26,7 @@ class LeafletWidget
     @map.on 'click', @mapClick
     @clear.bind('click', @clearFeatures)
     @undo.bind('click', @undoChange)
+    @search.bind('keypress', @searchKeyPress)
     @searchBtn.bind('click', @findLocations)
 
   getJSON: =>
@@ -53,6 +54,11 @@ class LeafletWidget
   undoChange: =>
     @geojson = @undo_geojson
     @refreshLayer()
+
+  searchKeyPress: (e) =>
+    if e.keyCode == 13
+      @findLocations()
+      return no
 
   foundLocations: (data) =>
     @results.html("")
