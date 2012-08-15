@@ -159,12 +159,12 @@ class BaseLeafletWidget(BaseGeometryWidget):
 
     class Media:
         js = (
-            'http://code.leafletjs.com/leaflet-0.3.1/leaflet.js',
+            'http://cdn.leafletjs.com/leaflet-0.4/leaflet.js',
             'floppyforms/js/LeafletWidget.js',
         )
         css = ({
             'all': (
-                'http://code.leafletjs.com/leaflet-0.3.1/leaflet.css',
+                'http://cdn.leafletjs.com/leaflet-0.4/leaflet.css',
             )
         })
 
