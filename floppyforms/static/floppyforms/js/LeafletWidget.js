@@ -54,7 +54,7 @@
       });
       this.map.setView(new L.LatLng(0, 0), 1);
       this.map.addLayer(this.layer);
-      this.marker_group = new L.GeoJSON();
+      this.marker_group = new L.GeoJSON(this.geojson);
       this.map.addLayer(this.marker_group);
       this.refreshLayer();
       this.map.on('click', this.mapClick);
@@ -79,7 +79,7 @@
       this.textarea.val(JSON.stringify(this.geojson));
       this.marker_group.clearLayers();
       if (this.geojson.coordinates.length > 0) {
-        return this.marker_group.addGeoJSON(this.geojson);
+        return this.marker_group.addData(this.geojson).addTo(this.map);
       }
     };
 
