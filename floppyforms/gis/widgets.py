@@ -43,7 +43,7 @@ class BaseGeometryWidget(forms.Textarea):
         super(BaseGeometryWidget, self).__init__(*args, **kwargs)
         attrs = kwargs.pop('attrs', {})
         for key in self.map_attrs:
-            setattr(self, key, attrs.pop(key, getattr(self, key)))
+            setattr(self, key, attrs.pop(key, getattr(self, key, None)))
 
     def get_context_data(self):
         ctx = super(BaseGeometryWidget, self).get_context_data()
@@ -53,7 +53,7 @@ class BaseGeometryWidget(forms.Textarea):
         ctx['geom_type'] = gdal.OGRGeomType(self.geom_type)
 
         for key in self.map_attrs:
-            ctx[key] = getattr(self, key)
+            ctx[key] = getattr(self, key, None)
 
         if self.geom_type == 'GEOMETRYCOLLECTION':
             ctx['geom_type'] = 'Collection'
