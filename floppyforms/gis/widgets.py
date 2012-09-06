@@ -89,7 +89,7 @@ class BaseGeometryWidget(forms.Textarea):
             else:
                 wkt = value.wkt
                 geojson = value.geojson
-        if self.as_geojson:
+        if hasattr(self, 'as_geojson') and self.as_geojson:
             context = super(BaseGeometryWidget, self).get_context(
                 name, geojson, attrs)
         else:
