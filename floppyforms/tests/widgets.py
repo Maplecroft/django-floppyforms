@@ -1,6 +1,7 @@
 import datetime
 import os
 
+from django.conf import settings
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import models
 from django.utils.dates import MONTHS
@@ -13,6 +14,7 @@ except ImportError:
 from .base import FloppyFormsTestCase
 
 import floppyforms as forms
+from .base import InvalidVariable
 
 
 class WidgetRenderingTest(FloppyFormsTestCase):
@@ -652,6 +654,41 @@ class WidgetRenderingTest(FloppyFormsTestCase):
         </p>
         """)
 
+    def test_checkbox_select_multiple_with_iterable_initial(self):
+        """Passing iterable objects to initial data, not only lists or tuples.
+        This is useful for ValuesQuerySet for instance."""
+        choices = (
+            ('en', 'En'),
+            ('fr', 'Fr'),
+            ('de', 'De'),
+        )
+
+        class iterable_choices(object):
+            def __init__(self, choices):
+                self.choices = choices
+
+            def __iter__(self):
+                for choice in self.choices:
+                    yield choice
+
+            def __len__(self):
+                return len(self.choices)
+
+        class Form(forms.Form):
+            key = forms.MultipleChoiceField(
+                widget=forms.CheckboxSelectMultiple,
+                choices=choices,
+            )
+
+        form = Form(initial={'key': iterable_choices(['fr', 'en'])})
+        self.assertHTMLEqual(form.as_p(), """
+            <p><label for="id_key">Key:</label><ul>
+                <li><label for="id_key_1"><input id="id_key_1" name="key" type="checkbox" value="en" checked="checked">En</label></li>
+                <li><label for="id_key_2"><input id="id_key_2" name="key" type="checkbox" value="fr" checked="checked">Fr</label></li>
+                <li><label for="id_key_3"><input id="id_key_3" name="key" type="checkbox" value="de">De</label></li>
+            </ul></p>
+        """)
+
     def test_radio_select(self):
         """<input type="radio">"""
         CHOICES = (
@@ -948,6 +985,7 @@ class WidgetRenderingTest(FloppyFormsTestCase):
     def test_datetime_with_initial(self):
         """SplitDateTimeWidget with an initial value"""
         value = now()
+
         class DateTimeForm(forms.Form):
             dt = forms.DateTimeField(initial=value,
                                      widget=forms.SplitDateTimeWidget)
@@ -1106,3 +1144,14 @@ class WidgetRenderingTest(FloppyFormsTestCase):
             <label for="id_foo">Foo:</label>
             <input type="range" name="foo" value="5" required max="10" step="1" bar="1.0" id="id_foo" min="1">
         </p>""")
+
+
+class WidgetRenderingTestWithTemplateStringIfInvalidSet(WidgetRenderingTest):
+    def setUp(self):
+        super(WidgetRenderingTestWithTemplateStringIfInvalidSet, self).setUp()
+        self.original_TEMPLATE_STRING_IF_INVALID = settings.TEMPLATE_STRING_IF_INVALID
+        settings.TEMPLATE_STRING_IF_INVALID = InvalidVariable(u'INVALID')
+
+    def tearDown(self):
+        super(WidgetRenderingTestWithTemplateStringIfInvalidSet, self).tearDown()
+        settings.TEMPLATE_STRING_IF_INVALID = self.original_TEMPLATE_STRING_IF_INVALID

@@ -4,11 +4,11 @@ Usage
 Forms
 `````
 
-FloppyForms are supposed to work just like Django forms::
+Floppyforms are supposed to work just like Django forms::
 
     import floppyforms as forms
 
-    class FlopForm(forms.Form):
+    class ProfileForm(forms.Form):
         name = forms.CharField()
         email = forms.EmailField()
         url = forms.URLField()
@@ -23,12 +23,13 @@ With some template code:
         <p><input type="submit" value="Yay!"></p>
     </form>
 
-Each field has a default widget and widgets are rendered using a template.
-Each widget is rendered using an isolated context containing all the relevant
-information.
+The form will be rendered using the ``floppyforms/layouts/p.html`` template.
+See the :doc:`documentation about layouts <layouts>` for details.
+
+Each field has a default widget and widgets are rendered using templates.
 
 Default templates are provided and their output is relatively similar to
-Django widgets, with a few minor differences:
+Django widgets, with a few :doc:`minor differences</differences>`:
 
 * HTML5 ``<input>`` types are supported: ``url``, ``email``, ``date``,
   ``datetime``, ``time``, ``number``, ``range``, ``search``, ``color``,
@@ -51,14 +52,14 @@ look like:
 
 .. code-block:: jinja
 
-    <input {% for attr in attrs.items %}
-             {{ attr.0 }}="{{ attr.1 }}"
+    <input {% for key, val in attrs.iteritems %}
+             {{ key }}="{{ val }}"
            {% endfor %}
            type="{{ type }}"
            name="{{ name }}"
            {% if value %}value="{{ value }}"{% endif %}>
 
-The default FloppyForms template for an ``<input>`` widget is slightly more
+The default floppyforms template for an ``<input>`` widget is slightly more
 complex.
 
 Some widgets may provide extra context variables and extra attributes:
@@ -87,20 +88,20 @@ variable.
 ModelForms
 ``````````
 
-With ``ModelForms``, you need to override the widgets to pick FloppyForms'
-widgets. Say we have a ``Flop`` model::
+With ``ModelForms``, you need to override the widgets to pick floppyforms'
+widgets. Say we have a ``Profile`` model::
 
-    class Flop(models.Model):
+    class Profile(models.Model):
         name = models.CharField(max_length=255)
         url = models.URLField()
 
-Creating a ``ModelForm`` with widgets from FloppyForms is easy::
+Creating a ``ModelForm`` with widgets from floppyforms is easy::
 
     import floppyforms as forms
 
-    class FlopForm(forms.ModelForm):
+    class ProfileForm(forms.ModelForm):
         class Meta:
-            model = Flop
+            model = Profile
             widgets = {
                 'name': forms.TextInput,
                 'url': forms.URLInput,

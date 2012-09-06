@@ -79,7 +79,7 @@ class FileField(Field, forms.FileField):
 
     def clean(self, data, initial=None):
         if data is FILE_INPUT_CONTRADICTION:
-            raise ValidationError(self.error_messages['contradiction'])
+            raise forms.ValidationError(self.error_messages['contradiction'])
         if data is False:
             if not self.required:
                 return False
@@ -97,18 +97,8 @@ class MultipleChoiceField(Field, forms.MultipleChoiceField):
     widget = SelectMultiple
 
 
-try:
-    Parent = forms.TypedMultipleChoiceField
-except AttributeError:  # Django < 1.3
-    class Parent(forms.MultipleChoiceField):
-        """No-op class for older Django versions"""
-        def __init__(self, *args, **kwargs):
-            kwargs.pop('coerce', None)
-            kwargs.pop('empty_value', None)
-            super(Parent, self).__init__(*args, **kwargs)
-
-
-class TypedMultipleChoiceField(MultipleChoiceField, Parent):
+class TypedMultipleChoiceField(MultipleChoiceField,
+                               forms.TypedMultipleChoiceField):
     pass
 
 
@@ -132,7 +122,7 @@ class FloatField(Field, forms.FloatField):
     widget = NumberInput
 
 
-class IntegerField(FloatField, forms.IntegerField):
+class IntegerField(Field, forms.IntegerField):
     widget = NumberInput
 
 

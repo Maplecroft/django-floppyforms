@@ -20,7 +20,7 @@ except ImportError:
     # Regex for token keyword arguments
     kwarg_re = re.compile(r"(?:(\w+)=)?(.+)")
 
-    def token_kwargs(bits, parser, support_legacy=False):
+    def token_kwargs(bits, parser, support_legacy=False):  # noqa
         """
         A utility method for parsing token keyword arguments.
 
@@ -122,7 +122,9 @@ def default_widget(bound_field, **kwargs):
 
 def default_widget_template(bound_field, **kwargs):
     if bound_field:
-        return bound_field.field.widget.template_name
+        if hasattr(bound_field.field.widget, 'template_name'):
+            return bound_field.field.widget.template_name
+        return None
 
 
 class ConfigPopException(Exception):
@@ -483,10 +485,11 @@ class BaseFormRenderNode(BaseFormNode):
         for variable in self.variables:
             try:
                 variable = variable.resolve(context)
-                if self.is_list_variable(variable):
-                    variables.extend(variable)
-                else:
-                    variables.append(variable)
+                if variable is not None:
+                    if self.is_list_variable(variable):
+                        variables.extend(variable)
+                    else:
+                        variables.append(variable)
             except VariableDoesNotExist:
                 pass
 
@@ -531,11 +534,14 @@ class FormNode(BaseFormRenderNode):
     def is_list_variable(self, var):
         if not hasattr(var, '__iter__'):
             return False
-        # we assume its a form if the var has these fields
+        # we assume it is a formset if the var has these fields
+        significant_attributes = ('forms', 'management_form')
+        if all(hasattr(var, attr) for attr in significant_attributes):
+            return True
+        # we assume it is a form if the var has these fields
         significant_attributes = ('is_bound', 'data', 'fields')
-        for attr in significant_attributes:
-            if hasattr(var, attr):
-                return False
+        if any(hasattr(var, attr) for attr in significant_attributes):
+            return False
         # form duck-typing was not successful so it must be a list
         return True
 

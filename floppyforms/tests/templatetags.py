@@ -1,9 +1,11 @@
 from django.forms import TextInput
+from django.forms.formsets import formset_factory
 from django.template import Context, Template, TemplateSyntaxError
 
 import floppyforms as forms
 from floppyforms.templatetags.floppyforms import (FormConfig, ConfigFilter,
-    FormNode, RowModifier, FieldModifier)
+                                                  FormNode, RowModifier,
+                                                  FieldModifier)
 from .base import FloppyFormsTestCase
 
 
@@ -38,6 +40,15 @@ class PersonForm(forms.Form):
     firstname = forms.CharField()
     lastname = forms.CharField()
     age = forms.IntegerField()
+
+
+class HardcodedWidget(forms.Widget):
+    def render(self, *args, **kwargs):
+        return u'Hardcoded widget.'
+
+
+class HardcodedForm(forms.Form):
+    name = forms.CharField(widget=HardcodedWidget())
 
 
 class FormConfigNodeTests(FloppyFormsTestCase):
@@ -263,8 +274,8 @@ class FormTagTests(FloppyFormsTestCase):
             {% form myform using %}
                 <ins>{% cycle "foo" "bar" as value %}</ins>
             {% endform %}
-            <del>{{ value }}</del>
-            """), '<ins>foo</ins><del />')
+            <del>{% firstof value "NO VALUE" %}</del>
+            """), '<ins>foo</ins><del>NO VALUE</del>')
         # form variable equals the first argument in form tag
         self.assertHTMLEqual(render("""
             {% form myform using %}{% if myform == form %}Equals!{% endif %}{% endform %}
@@ -278,7 +289,8 @@ class FormTagTests(FloppyFormsTestCase):
             """, {'f1': SimpleForm(), 'f2': SimpleForm()}), 'Equals!')
 
         # none forms are not included in form list
-        self.assertHTMLEqual(render("""
+        self.assertHTMLEqual(
+            render("""
             {% form f1 nothing f2 more_of_nothing using %}
                 {% if f1 == forms.0 and f2 == forms.1 %}
                 {% if forms.2 == None and more_of_nothing == None %}
@@ -380,6 +392,32 @@ class FormTagTests(FloppyFormsTestCase):
             1. Form Fields: firstname lastname age
             2. Form Fields: name
             3. Form Fields: name
+            """)
+
+    def test_formset_rendering(self):
+        PersonFormSet = formset_factory(PersonForm, extra=3)
+        formset = PersonFormSet()
+        self.assertHTMLEqual(
+            render('{% form formset using "simple_form_tag.html" %}', {
+                'formset': formset,
+            }), """
+            Forms: 3
+            1. Form Fields: firstname lastname age
+            2. Form Fields: firstname lastname age
+            3. Form Fields: firstname lastname age
+            """)
+
+        formset = PersonFormSet(initial=[{}, {}])
+        self.assertHTMLEqual(
+            render('{% form formset using "simple_form_tag.html" %}', {
+                'formset': formset,
+            }), """
+            Forms: 5
+            1. Form Fields: firstname lastname age
+            2. Form Fields: firstname lastname age
+            3. Form Fields: firstname lastname age
+            4. Form Fields: firstname lastname age
+            5. Form Fields: firstname lastname age
             """)
 
 
@@ -576,27 +614,30 @@ class FormFieldTagTests(FloppyFormsTestCase):
     def test_configure_template_with_extra_context(self):
         form = SimpleForm()
         with self.assertTemplateUsed('simple_formfield_tag.html'):
-            self.assertHTMLEqual(render("""{% form myform using %}
+            self.assertHTMLEqual(
+                render("""{% form myform using %}
                 {% formconfig field using "simple_formfield_tag.html" %}
                 {% formfield form.name with extra_argument="I want bacon!" %}
             {% endform %}""", {'myform': form}),
-            "Type: text Extra argument: I want bacon!")
+                "Type: text Extra argument: I want bacon!")
 
     def test_configure_extra_context(self):
         form = SimpleForm()
-        self.assertHTMLEqual(render("""{% form myform using %}
+        self.assertHTMLEqual(
+            render("""{% form myform using %}
             {% formconfig field with extra_argument="I want spam!" %}
             {% formconfig field with extra_argument="I want ham!" %}
             {% formfield form.name using "simple_formfield_tag.html" %}
         {% endform %}""", {'myform': form}),
-        "Type: text Extra argument: I want ham!")
+            "Type: text Extra argument: I want ham!")
 
         context = Context({'myform': form})
-        self.assertHTMLEqual(render("""{% form myform using %}
+        self.assertHTMLEqual(
+            render("""{% form myform using %}
             {% formconfig field using "simple_formfield_tag.html" with extra_argument="I want ham!" %}
             {% formfield form.name %}
         {% endform %}""", context),
-        "Type: text Extra argument: I want ham!")
+            "Type: text Extra argument: I want ham!")
 
     def test_change_widget(self):
         form = SimpleForm()
@@ -606,6 +647,12 @@ class FormFieldTagTests(FloppyFormsTestCase):
         self.assertHTMLEqual(render("""{% form myform using %}
             {% formfield form.name %}
         {% endform %}""", {'myform': form}, config), """<input type="password" name="name" id="id_name" />""")
+
+    def test_hardcoded_widget(self):
+        form = HardcodedForm()
+        self.assertHTMLEqual(render("""{% form myform using %}
+            {% formfield form.name %}
+        {% endform %}""", {'myform': form}), """Hardcoded widget.""")
 
 
 class WidgetTagTest(FloppyFormsTestCase):

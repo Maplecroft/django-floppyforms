@@ -1,9 +1,9 @@
 try:
     from django.contrib.gis.forms import GeometryField as BaseGeometryField
 except ImportError:
-    from floppyforms.fields import CharField as BaseGeometryField
+    from floppyforms.fields import CharField as BaseGeometryField  # noqa
 
-from floppyforms.gis import widgets
+from . import widgets
 
 __all__ = ('GeometryField', 'GeometryCollectionField',
            'PointField', 'MultiPointField',

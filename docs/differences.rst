@@ -1,8 +1,8 @@
 Differences with django.forms
 =============================
 
-So, you have a project already using django.forms, and you're considering a
-switch to floppyforms? Here's what you need to know, assuming the only
+So, you have a project already using ``django.forms``, and you're considering
+a switch to floppyforms? Here's what you need to know, assuming the only
 change you've made to your code is a simple change, from:
 
 .. code-block:: python
@@ -38,8 +38,8 @@ Native widget types
 ```````````````````
 
 Floppyforms tries to use the native HTML5 widgets whenever it's possible. Thus
-some widgets which used to be simple ``TextInputs`` in django.forms are now
-specific input that will render as ``<input type="...">`` with the HTML5
+some widgets which used to be simple ``TextInputs`` in ``django.forms`` are
+now specific input that will render as ``<input type="...">`` with the HTML5
 types such as ``url``, ``email``. See :ref:`widgets` for a detailed list of
 specific widgets.
 
@@ -76,9 +76,9 @@ ModelForms
 ----------
 
 As for ModelForms, all the fields coming from the model still get a widget
-from django.form and not from floppyforms, unless the widgets are overridden
-in the form's ``Meta`` inner class. For example, if we have a model declared
-as such:
+from ``django.forms`` and not from floppyforms, unless the widgets are
+overridden in the form's ``Meta`` inner class. For example, if we have a
+model declared as such:
 
 .. code-block:: python
 
@@ -111,7 +111,30 @@ widget from floppyforms:
 * ``timestamp`` has an overridden widget coming from floppyforms as well
 
 However, the ``name`` and ``rank`` field will both get a widget from
-django.forms, in this case a ``TextInput``.
+``django.forms``, in this case a ``TextInput``.
+
+``TEMPLATE_STRING_IF_INVALID`` caveats
+--------------------------------------
+
+The use of a non-empty ``TEMPLATE_STRING_IF_INVALID`` setting can impact
+rendering. Missing template variables are rendered using the content of ``TEMPLATE_STRING_IF_INVALID`` but filters used on non-existing variables are not applied (see `django's documentation on how invalid template variables are
+handled`__ for more details).
+
+__ https://docs.djangoproject.com/en/dev/ref/templates/api/#invalid-template-variables
+
+Django-floppyforms assumes in its predefined form layouts that
+all filters are applied. You can work around this by making your
+``TEMPLATE_STRING_IF_INVALID`` evaluate to ``False`` but still keep its
+string representation. Here is an example how you could achieve this in your
+``settings.py``:
+
+.. code-block:: python
+
+    class InvalidVariable(unicode):
+        def __nonzero__(self):
+            return False
+
+    TEMPLATE_STRING_IF_INVALID = InvalidVariable(u'INVALID')
 
 Getting back Django's behaviour
 -------------------------------

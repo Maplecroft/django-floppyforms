@@ -419,7 +419,7 @@ class Select(Input):
         self.choices = list(choices)
 
     def get_context(self, name, value, attrs=None, choices=()):
-        if not isinstance(value, (list, tuple)):
+        if not hasattr(value, '__iter__'):
             value = [value]
         context = super(Select, self).get_context(name, value, attrs)
 
@@ -495,7 +495,7 @@ class SelectMultiple(Select):
     allow_multiple_selected = True
 
     def _format_value(self, value):
-        if value is None:
+        if len(value) == 1 and value[0] is None:
             value = []
         return [force_unicode(v) for v in value]
 
@@ -596,7 +596,7 @@ class SelectDateWidget(forms.Widget):
         # for things like "checked", set the value to False so that the
         # template doesn't render checked="".
         for key, value in attrs.items():
-            if value == True:
+            if value is True:
                 attrs[key] = False
         context['year_id'] = self.year_field % attrs['id']
         context['month_id'] = self.month_field % attrs['id']

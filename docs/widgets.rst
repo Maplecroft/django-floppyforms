@@ -6,8 +6,8 @@ Provided widgets
 Default widgets for form fields
 -------------------------------
 
-The first column represents the name of a django.forms field. FloppyForms aims
-to implement all the Django fields with the same class name, in the
+The first column represents the name of a ``django.forms`` field. FloppyForms
+aims to implement all the Django fields with the same class name, in the
 ``floppyforms`` namespace.
 
 ======================== =================== ========================
@@ -41,22 +41,11 @@ MultiValueField          None (*abstract*)
 SplitDateTimeField       SplitDateTimeWidget
 ======================== =================== ========================
 
-.. note:: ClearableFileInput
+.. note:: Textarea
 
-    The ``ClearableFileInput`` widget has been added in Django 1.3. If you use
-    django-floppyforms with Django 1.2, the ClearableFileInput will behave
-    just like a traditional FileInput.
-
-    .. versionchanged:: 1.0
-       django-floppyforms 1.0 ships with a full backport of
-       ``ClearableFileInput``.
-
-
-.. note:: TypedMultipleChoiceField
-
-    The ``TypedMultipleChoiceField`` has also been added in Django 1.3, it
-    will behave like a normal ``MultipleChoiceField`` on Django 1.2.
-
+    The ``Textarea`` widget renders a ``<textarea>`` HTML element and is
+    available with django-floppyforms. It doesn't appear on the table above
+    since no field has it as a default widget.
 
 .. note:: RegexField
 
@@ -75,8 +64,8 @@ SplitDateTimeField       SplitDateTimeWidget
     regexes as a ``regex`` argument.
 
 
-Extra widget
-------------
+Extra widgets
+-------------
 
 Django provides "extra" widgets in ``django.forms.extras.widgets``. In fact, a
 single extra widget is implemented: ``SelectDateWidget``. The template-based

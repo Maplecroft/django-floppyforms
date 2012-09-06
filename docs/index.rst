@@ -1,11 +1,11 @@
 Django-floppyforms
 ==================
 
-Django-floppyforms is an application that gives you full control of the output
-of forms rendering. This is more a **widgets** library than a forms library
-but form fields are provided for convenience. The forms API and features are
-exactly the same as Django's, the key difference is that widgets are rendered
-in templates instead of using string interpolation.
+Django-floppyforms is an application that gives you full control of the
+output of forms rendering. The forms API and features are exactly the same
+as Django's, the key difference is that fields and widgets are rendered in
+templates instead of using string interpolation, giving you full control of
+the output using Django templates.
 
 The widgets API allows you to customize and extend the widgets behaviour,
 making it very easy to define custom widgets. The default widgets are very
@@ -16,15 +16,20 @@ attribute, as well as the new ``<input>`` types. For more information, read
 
 .. _this: http://diveintohtml5.info/forms.html
 
+The form rendering API is a set of template tags that lets you render forms
+using custom layouts. This is very similar to Django's ``as_p``, ``as_ul`` or
+``as_table``, except that you can customize and add layouts to your
+convenience.
+
 The source code is hosted on `github`_.
 
 .. _github: https://github.com/brutasse/django-floppyforms
 
 Installation
--------------
+------------
 
-Django 1.2 or greater is required because of the smart *if* template tag.
-Two-step process:
+Django 1.3 or greater is required. Two-step process to install
+django-floppyforms:
 
 * ``pip install -U django-floppyforms``
 * Add ``'floppyforms'`` to your ``INSTALLED_APPS``
@@ -56,16 +61,24 @@ Feel free to join the ``#django-floppyforms`` IRC channel on freenode.
 Changelog
 `````````
 
-* **v1.0** (not released yet):
+* **v1.0.1**:
+
+  * Fixed ``Textarea`` widget template to work with a non-empty
+    ``TEMPLATE_STRING_IF_INVALID`` setting. Thanks to Leon Matthews for the
+    report.
+
+* **v1.0**:
 
   * cleaned up the behaviour of ``attrs``
-  * compatible with Django 1.2 to 1.4
+  * compatible with Django 1.3 and 1.4
   * ``<optgroup>`` support in select widgets
-  * ``Select`` widgets: renamed ``choices`` context variable to ``optgroups``
+  * ``Select`` widgets: renamed ``choices`` context variable to ``optgroups``.
+    This is **backwards-incompatible**: if you have custom templates for
+    ``Select`` widgets, they need to be updated.
   * ``get_context()`` is more reliable
-  * Added ``form``, ``formrow``, ``formfield`` and ``formconfig`` template
-    tags.
-  * Added template based form layout system.
+  * Added ``form``, ``formrow``, ``formfield``, ``formconfig`` and ``widget``
+    template tags.
+  * Added template-based form layout system.
   * Added ability to render widgets with the broader page context, for
     instance for django-sekizai compatibility.
 

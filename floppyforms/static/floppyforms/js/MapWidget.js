@@ -31,7 +31,7 @@ OpenLayers.Util.properFeatures = function(features, geom_type) {
 OpenLayers.Format.DjangoWKT = OpenLayers.Class(OpenLayers.Format.WKT, {
 	initialize: function(options) {
 		OpenLayers.Format.WKT.prototype.initialize.apply(this, [options]);
-		this.regExes.justComma = /\s*,\s?\s*/;
+		this.regExes.justComma = /\s*,\s*/;
 	},
 
 	parse: {
@@ -170,7 +170,7 @@ function MapWidget(options) {
 
 	// Default options
 	this.options = {
-		base_layer: new OpenLayers.Layer.WMS('OpenLayers WMS', 'http://labs.metacarta.com/wms/vmap0', {layers: 'basic'}),
+		base_layer: new OpenLayers.Layer.WMS('OpenLayers WMS', 'http://vmap0.tiles.osgeo.org/wms/vmap0', {layers: 'basic'}),
 		color: 'ee9900',
 		default_lat: 0,
 		default_lon: 0,
