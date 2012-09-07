@@ -56,12 +56,40 @@
       this.map.addLayer(this.layer);
       this.marker_group = new L.GeoJSON(this.geojson);
       this.map.addLayer(this.marker_group);
+
+      this.zoomToFit();
+
       this.refreshLayer();
       this.map.on('click', this.mapClick);
       this.clear.bind('click', this.clearFeatures);
       this.undo.bind('click', this.undoChange);
       this.search.bind('keypress', this.searchKeyPress);
       this.searchBtn.bind('click', this.findLocations);
+    }
+
+    LeafletWidget.prototype.zoomToFit = function() {
+      // Zoom to fit all drawn points (I'm sure this should be easier).
+      var coords = this.geojson.coordinates;
+      if (coords) {
+          var northEast = new L.LatLng(coords[0][1], coords[0][0]);
+          var southWest = new L.LatLng(coords[0][1], coords[0][0]);
+          this.$.each(coords, function(i, coord) {
+              if (coord[1] > northEast.lat) {
+                  northEast.lat = coord[1];
+              }
+              if (coord[0] > northEast.lng) {
+                  northEast.lng = coord[0];
+              }
+              if (coord[1] < southWest.lat) {
+                  southWest.lat = coord[1];
+              }
+              if (coord[0] < southWest.lng) {
+                  southWest.lng = coord[0];
+              }
+          });
+          var bounds = new L.LatLngBounds(southWest, northEast);
+          this.map.fitBounds(bounds);
+      }
     }
 
     LeafletWidget.prototype.getJSON = function() {
@@ -115,7 +143,9 @@
         item.data('lat', geoname.lat).data('lng', geoname.lng).addClass('result').attr('title', JSON.stringify(geoname));
         item.click(function() {
           item = self.$(this);
-          self.map.setView(new L.LatLng(item.data('lat'), item.data('lng')), 12);
+          self.geojson.coordinates.push([item.data('lng'), item.data('lat')]);
+          self.zoomToFit();
+          self.refreshLayer();
           return self.results.parent().fadeOut();
         });
         item.hover(function() {
@@ -129,6 +159,7 @@
             marker = item.data('marker');
           }
           self.map.addLayer(marker);
+
           if (!self.map.getBounds().contains(point)) {
             bounds = new L.LatLngBounds(point, self.map.getCenter());
             return self.map.fitBounds(bounds);
