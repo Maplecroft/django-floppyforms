@@ -38,6 +38,8 @@
 
       this.getJSON = __bind(this.getJSON, this);
 
+      this.zoomToFit = __bind(this.zoomToFit, this);
+
       this.$ = $ || django.jQuery;
       this.map = new L.Map(this.options.map_id);
       this.textarea = this.$("#" + this.options.id);
@@ -56,9 +58,7 @@
       this.map.addLayer(this.layer);
       this.marker_group = new L.GeoJSON(this.geojson);
       this.map.addLayer(this.marker_group);
-
       this.zoomToFit();
-
       this.refreshLayer();
       this.map.on('click', this.mapClick);
       this.clear.bind('click', this.clearFeatures);
@@ -68,29 +68,30 @@
     }
 
     LeafletWidget.prototype.zoomToFit = function() {
-      // Zoom to fit all drawn points (I'm sure this should be easier).
-      var coords = this.geojson.coordinates;
+      var bounds, coord, coords, northEast, southWest, _i, _len;
+      coords = this.geojson.coordinates;
       if (coords) {
-          var northEast = new L.LatLng(coords[0][1], coords[0][0]);
-          var southWest = new L.LatLng(coords[0][1], coords[0][0]);
-          this.$.each(coords, function(i, coord) {
-              if (coord[1] > northEast.lat) {
-                  northEast.lat = coord[1];
-              }
-              if (coord[0] > northEast.lng) {
-                  northEast.lng = coord[0];
-              }
-              if (coord[1] < southWest.lat) {
-                  southWest.lat = coord[1];
-              }
-              if (coord[0] < southWest.lng) {
-                  southWest.lng = coord[0];
-              }
-          });
-          var bounds = new L.LatLngBounds(southWest, northEast);
-          this.map.fitBounds(bounds);
+        northEast = new L.LatLng(coords[0][1], coords[0][0]);
+        southWest = new L.LatLng(coords[0][1], coords[0][0]);
+        for (_i = 0, _len = coords.length; _i < _len; _i++) {
+          coord = coords[_i];
+          if (coord[1] > northEast.lat) {
+            northEast.lat = coord[1];
+          }
+          if (coord[0] > northEast.lng) {
+            northEast.lng = coord[0];
+          }
+          if (coord[1] > southWest.lat) {
+            southWest.lat = coord[1];
+          }
+          if (coord[0] > southWest.lng) {
+            southWest.lng = coord[0];
+          }
+        }
+        bounds = new L.LatLngBounds(southWest, northEast);
+        return this.map.fitBounds(bounds);
       }
-    }
+    };
 
     LeafletWidget.prototype.getJSON = function() {
       if (this.textarea.val()) {
@@ -159,7 +160,6 @@
             marker = item.data('marker');
           }
           self.map.addLayer(marker);
-
           if (!self.map.getBounds().contains(point)) {
             bounds = new L.LatLngBounds(point, self.map.getCenter());
             return self.map.fitBounds(bounds);

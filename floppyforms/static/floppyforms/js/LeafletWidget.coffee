@@ -19,8 +19,10 @@ class LeafletWidget
     @map.setView(new L.LatLng(0, 0), 1)
     @map.addLayer(@layer)
 
-    @marker_group = new L.GeoJSON()
+    @marker_group = new L.GeoJSON(@geojson)
     @map.addLayer(@marker_group)
+
+    @zoomToFit()
     @refreshLayer()
 
     @map.on 'click', @mapClick
@@ -28,6 +30,23 @@ class LeafletWidget
     @undo.bind('click', @undoChange)
     @search.bind('keypress', @searchKeyPress)
     @searchBtn.bind('click', @findLocations)
+
+  zoomToFit: =>
+    coords = @geojson.coordinates
+    if coords
+      northEast = new L.LatLng(coords[0][1], coords[0][0])
+      southWest = new L.LatLng(coords[0][1], coords[0][0])
+      for coord in coords
+        if coord[1] > northEast.lat
+          northEast.lat = coord[1]
+        if coord[0] > northEast.lng
+          northEast.lng = coord[0]
+        if coord[1] > southWest.lat
+          southWest.lat = coord[1]
+        if coord[0] > southWest.lng
+          southWest.lng = coord[0]
+      bounds = new L.LatLngBounds(southWest, northEast)
+      @map.fitBounds(bounds)
 
   getJSON: =>
     # get json or
@@ -41,7 +60,7 @@ class LeafletWidget
     @textarea.val(JSON.stringify(@geojson))
     @marker_group.clearLayers()
     if @geojson.coordinates.length > 0
-      @marker_group.addGeoJSON(@geojson)
+      @marker_group.addData(@geojson).addTo(@map)
 #      @marker_group.on('click', @featureClick)
 
   clearFeatures: =>
@@ -72,7 +91,9 @@ class LeafletWidget
         .attr('title', JSON.stringify(geoname))
       item.click ->
         item = self.$(@)
-        self.map.setView(new L.LatLng(item.data('lat'), item.data('lng')), 12)
+        self.geojson.coordinates.push([item.data('lng'), item.data('lat')])
+        self.zoomToFit()
+        self.refreshLayer()
         self.results.parent().fadeOut()
 
       item.hover ->
