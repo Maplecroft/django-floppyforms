@@ -1,16 +1,32 @@
 <style type="text/css">
-    .{{ attrs.id }}_util { float: right; margin-left: 5px; cursor: pointer;}
-	#{{ attrs.id }}_map { width: {{ map_width }}px; height: {{ map_height }}px; }
-	#{{ attrs.id }}_map .aligned label { float: inherit; }
-    #{{ attrs.id }}_search_result_wrapper { display: none; float: right; width: 100px; height: 100px; overflow-y: scroll; z-index: 1000; position: absolute; top: 25px; left: {{ map_width }}px; background-color: white; padding: 5px;}
+    .{{ attrs.id }}_util { float: right; margin-left: 5px; cursor: pointer; min-width: 30px !important;}
+	  #{{ attrs.id }}_map { width: {{ map_width }}px; height: {{ map_height }}px; }
+	  #{{ attrs.id }}_map .aligned label { float: inherit; }
+    #{{ attrs.id }}_search_result_wrapper {
+      display: none;
+      float: right;
+      width: 200px;
+      height: 100px;
+      overflow-y: scroll;
+      z-index: 1000;
+      position: absolute;
+      top: 25px;
+      left: {{ map_width }}px;
+      background-color: white;
+      padding: 5px;
+    }
+    #{{ attrs.id }}_search_result li:hover {
+      cursor: pointer;
+    }
 	{% if not display_wkt %}#{{ attrs.id }} { display: none; }{% endif %}
-
 </style>
 
-<span class="{{ attrs.id }}_util" id="{{ attrs.id }}_searchBtn">Find</span>
+<a href="#" class="{{ attrs.id }}_util" id="{{ attrs.id }}_clear">Clear all features</a>
+<br/>
+<a href="#" class="{{ attrs.id }}_util" id="{{ attrs.id }}_undo">Undo last change</a>
+<br/>
+<button class="{{ attrs.id }}_util grp-button" id="{{ attrs.id }}_searchBtn">Find</button>
 <input class="{{ attrs.id }}_util" id="{{ attrs.id }}_search" />
-<span class="{{ attrs.id }}_util" id="{{ attrs.id }}_clear">Clear all features</span>
-<span class="{{ attrs.id }}_util" id="{{ attrs.id }}_undo">Undo last change</span>
 <div id="{{ attrs.id }}_search_result_wrapper"><ul id="{{ attrs.id }}_search_result"></ul></div>
 <div id="{{ attrs.id }}_map"></div>
 <textarea name="{{ name }}"{% if required %} required{% endif %}{% include "floppyforms/attrs.html" %}>{{ value }}</textarea>
