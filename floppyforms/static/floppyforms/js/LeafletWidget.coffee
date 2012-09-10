@@ -41,9 +41,9 @@ class LeafletWidget
           northEast.lat = coord[1]
         if coord[0] > northEast.lng
           northEast.lng = coord[0]
-        if coord[1] > southWest.lat
+        if coord[1] < southWest.lat
           southWest.lat = coord[1]
-        if coord[0] > southWest.lng
+        if coord[0] < southWest.lng
           southWest.lng = coord[0]
       bounds = new L.LatLngBounds(southWest, northEast)
       @map.fitBounds(bounds)
