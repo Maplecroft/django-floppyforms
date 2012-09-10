@@ -70,7 +70,7 @@
     LeafletWidget.prototype.zoomToFit = function() {
       var bounds, coord, coords, northEast, southWest, _i, _len;
       coords = this.geojson.coordinates;
-      if (coords) {
+      if (coords && coords.length > 0) {
         northEast = new L.LatLng(coords[0][1], coords[0][0]);
         southWest = new L.LatLng(coords[0][1], coords[0][0]);
         for (_i = 0, _len = coords.length; _i < _len; _i++) {

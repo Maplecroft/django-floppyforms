@@ -33,7 +33,7 @@ class LeafletWidget
 
   zoomToFit: =>
     coords = @geojson.coordinates
-    if coords
+    if coords and coords.length > 0
       northEast = new L.LatLng(coords[0][1], coords[0][0])
       southWest = new L.LatLng(coords[0][1], coords[0][0])
       for coord in coords
