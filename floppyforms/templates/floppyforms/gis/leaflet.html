@@ -5,15 +5,17 @@
     #{{ attrs.id }}_search_result_wrapper {
       display: none;
       float: right;
-      width: 200px;
-      height: 100px;
+      width: 300px;
+      max-height: 200px;
       overflow-y: scroll;
       z-index: 1000;
       position: absolute;
-      top: 25px;
-      left: {{ map_width }}px;
+      top: 55px;
+      right: 12px;
+/*       left: {{ map_width }}px; */
       background-color: white;
       padding: 5px;
+      border: 1px solid #666;
     }
     #{{ attrs.id }}_search_result li:hover {
       cursor: pointer;
@@ -25,7 +27,7 @@
 <br/>
 <a href="#" class="{{ attrs.id }}_util" id="{{ attrs.id }}_undo">Undo last change</a>
 <br/>
-<button class="{{ attrs.id }}_util grp-button" id="{{ attrs.id }}_searchBtn">Find</button>
+<!-- <button class="{{ attrs.id }}_util grp-button" id="{{ attrs.id }}_searchBtn">Find</button> -->
 <input class="{{ attrs.id }}_util" id="{{ attrs.id }}_search" />
 <div id="{{ attrs.id }}_search_result_wrapper"><ul id="{{ attrs.id }}_search_result"></ul></div>
 <div id="{{ attrs.id }}_map"></div>

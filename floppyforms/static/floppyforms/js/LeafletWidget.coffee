@@ -12,6 +12,7 @@ class LeafletWidget
 
     @searchURL = "http://ws.geonames.org/searchJSON?q={{LOCATION}}&maxRows=100"
 
+    @undo_geojson = []
     @geojson = @getJSON()
 
     layerUrl = @options.url
@@ -50,29 +51,30 @@ class LeafletWidget
 
   getJSON: =>
     # get json or
-      if @textarea.val()
-        JSON.parse(@textarea.val())
-      else
-        type: @options.geom_type
-        coordinates: []
+    if @textarea.val()
+      JSON.parse(@textarea.val())
+    else
+      type: @options.geom_type
+      coordinates: []
 
   refreshLayer: ->
     @textarea.val(JSON.stringify(@geojson))
     @marker_group.clearLayers()
-    if @geojson.coordinates.length > 0
+    if @geojson and @geojson.coordinates.length > 0
       @marker_group.addData(@geojson).addTo(@map)
 #      @marker_group.on('click', @featureClick)
 
   clearFeatures: =>
-    @undo_geojson = @getJSON()
+    @undo_geojson.push(@getJSON())
     @geojson =
       type: @options.geom_type
       coordinates: []
     @refreshLayer()
 
   undoChange: =>
-    @geojson = @undo_geojson
+    @geojson = @undo_geojson.pop() or @getJSON()
     @refreshLayer()
+    return no
 
   searchKeyPress: (e) =>
     if e.keyCode == 13
@@ -91,10 +93,12 @@ class LeafletWidget
         .attr('title', JSON.stringify(geoname))
       item.click ->
         item = self.$(@)
+        self.undo_geojson.push(self.getJSON())
         self.geojson.coordinates.push([item.data('lng'), item.data('lat')])
         self.zoomToFit()
         self.refreshLayer()
         self.results.parent().fadeOut()
+        self.search.val('')
 
       item.hover ->
         item = self.$(@)
@@ -165,7 +169,7 @@ class LeafletWidget
     # handle click for a multipoly geom
 
   mapClick: (e) =>
-    @undo_geojson = @getJSON()
+    @undo_geojson.push(@getJSON())
     switch @options.geom_type
       when "Point" then @doPoint e, yes
       when "MultiPoint" then @doMultiPoint e, yes
@@ -181,7 +185,7 @@ class LeafletWidget
     # but that was from a featurecollection rather than a simple geoJSON
     # object. Not sure how to do this...
     return
-    @undo_geojson = @getJSON()
+    @undo_geojson.push(@getJSON())
     switch @options.geom_type
       when "Point" then @doPoint e, no
       when "MultiPoint" then @doMultiPoint e, no
