@@ -78,7 +78,18 @@ class BaseGeometryWidget(forms.Textarea):
         geojson = ''
         if value:
             srid = self.map_srid
-            if value.srid != srid:
+            if not value.srid:
+                # If we're processing a form with errors, for some reason the
+                # SRID doesn't get set on the value, and the below
+                # ogr.transform always throws an exception (presumably because
+                # you can't transform from no SRID to self.map_srid). This just
+                # assumes it /should/ have been set the same as self.map_srid
+                # and proceeds appropriately.
+                ogr = value.ogr
+                value.srid = srid
+                wkt = ogr.wkt
+                geojson = ogr.geojson
+            elif value.srid != srid:
                 try:
                     ogr = value.ogr
                     ogr.transform(srid)
