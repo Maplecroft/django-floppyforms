@@ -6,6 +6,7 @@ class LeafletWidget
     @textarea = @$("##{ @options.id }")
     @clear = @$("##{ @options.id }_clear")
     @undo = @$("##{ @options.id }_undo")
+    @redo = @$("##{ @options.id }_redo")
     @search = @$("##{ @options.id }_search")
     @searchBtn = @$("##{ @options.id }_searchBtn")
     @results = @$("##{ options.id }_search_result")
@@ -13,6 +14,7 @@ class LeafletWidget
     @searchURL = "http://ws.geonames.org/searchJSON?q={{LOCATION}}&maxRows=100"
 
     @undo_geojson = []
+    @redo_geojson = []
     @geojson = @getJSON()
 
     layerUrl = @options.url
@@ -29,6 +31,7 @@ class LeafletWidget
     @map.on 'click', @mapClick
     @clear.bind('click', @clearFeatures)
     @undo.bind('click', @undoChange)
+    @redo.bind('click', @redoChange)
     @search.bind('keypress', @searchKeyPress)
     @searchBtn.bind('click', @findLocations)
 
@@ -62,18 +65,39 @@ class LeafletWidget
     @marker_group.clearLayers()
     if @geojson and @geojson.coordinates.length > 0
       @marker_group.addData(@geojson).addTo(@map)
-#      @marker_group.on('click', @featureClick)
 
   clearFeatures: =>
     @undo_geojson.push(@getJSON())
+
     @geojson =
       type: @options.geom_type
       coordinates: []
     @refreshLayer()
 
+    return no
+
   undoChange: =>
-    @geojson = @undo_geojson.pop() or @getJSON()
+    _geojson = @undo_geojson.pop()
+
+    if not _geojson
+      return no
+
+    @redo_geojson.push(@geojson)
+    @geojson = _geojson
     @refreshLayer()
+
+    return no
+
+  redoChange: =>
+    _geojson = @redo_geojson.pop()
+
+    if not _geojson
+      return no
+
+    @undo_geojson.push(@geojson)
+    @geojson = _geojson
+    @refreshLayer()
+
     return no
 
   searchKeyPress: (e) =>
@@ -177,22 +201,6 @@ class LeafletWidget
       when "MultiLineString" then @doMultiLine e, yes
       when "Polygon" then @doPoly e, yes
       when "MultiPolygon" then @doMultiPoly e, yes
-    @refreshLayer()
-
-  featureClick: (e) =>
-    # not really sure why, but this gives us a layer.
-    # Previously, I have used this and it has returned the actual marker.
-    # but that was from a featurecollection rather than a simple geoJSON
-    # object. Not sure how to do this...
-    return
-    @undo_geojson.push(@getJSON())
-    switch @options.geom_type
-      when "Point" then @doPoint e, no
-      when "MultiPoint" then @doMultiPoint e, no
-      when "LineString" then @doLine e, no
-      when "MultiLineString" then @doMultiLine e, no
-      when "Polygon" then @doPoly e, no
-      when "MultiPolygon" then @doMultiPoly e, no
     @refreshLayer()
 
 window.floppyforms = window.floppyforms or {}
