@@ -38,6 +38,8 @@
 
       this.getJSON = __bind(this.getJSON, this);
 
+      this.zoomToFit = __bind(this.zoomToFit, this);
+
       this.$ = $ || django.jQuery;
       this.map = new L.Map(this.options.map_id);
       this.textarea = this.$("#" + this.options.id);
@@ -47,6 +49,7 @@
       this.searchBtn = this.$("#" + this.options.id + "_searchBtn");
       this.results = this.$("#" + options.id + "_search_result");
       this.searchURL = "http://ws.geonames.org/searchJSON?q={{LOCATION}}&maxRows=100";
+      this.undo_geojson = [];
       this.geojson = this.getJSON();
       layerUrl = this.options.url;
       this.layer = new L.TileLayer(layerUrl, {
@@ -56,6 +59,7 @@
       this.map.addLayer(this.layer);
       this.marker_group = new L.GeoJSON(this.geojson);
       this.map.addLayer(this.marker_group);
+      this.zoomToFit();
       this.refreshLayer();
       this.map.on('click', this.mapClick);
       this.clear.bind('click', this.clearFeatures);
@@ -63,6 +67,32 @@
       this.search.bind('keypress', this.searchKeyPress);
       this.searchBtn.bind('click', this.findLocations);
     }
+
+    LeafletWidget.prototype.zoomToFit = function() {
+      var bounds, coord, coords, northEast, southWest, _i, _len;
+      coords = this.geojson.coordinates;
+      if (coords && coords.length > 0) {
+        northEast = new L.LatLng(coords[0][1], coords[0][0]);
+        southWest = new L.LatLng(coords[0][1], coords[0][0]);
+        for (_i = 0, _len = coords.length; _i < _len; _i++) {
+          coord = coords[_i];
+          if (coord[1] > northEast.lat) {
+            northEast.lat = coord[1];
+          }
+          if (coord[0] > northEast.lng) {
+            northEast.lng = coord[0];
+          }
+          if (coord[1] < southWest.lat) {
+            southWest.lat = coord[1];
+          }
+          if (coord[0] < southWest.lng) {
+            southWest.lng = coord[0];
+          }
+        }
+        bounds = new L.LatLngBounds(southWest, northEast);
+        return this.map.fitBounds(bounds);
+      }
+    };
 
     LeafletWidget.prototype.getJSON = function() {
       if (this.textarea.val()) {
@@ -78,13 +108,13 @@
     LeafletWidget.prototype.refreshLayer = function() {
       this.textarea.val(JSON.stringify(this.geojson));
       this.marker_group.clearLayers();
-      if (this.geojson.coordinates.length > 0) {
+      if (this.geojson && this.geojson.coordinates.length > 0) {
         return this.marker_group.addData(this.geojson).addTo(this.map);
       }
     };
 
     LeafletWidget.prototype.clearFeatures = function() {
-      this.undo_geojson = this.getJSON();
+      this.undo_geojson.push(this.getJSON());
       this.geojson = {
         type: this.options.geom_type,
         coordinates: []
@@ -93,8 +123,9 @@
     };
 
     LeafletWidget.prototype.undoChange = function() {
-      this.geojson = this.undo_geojson;
-      return this.refreshLayer();
+      this.geojson = this.undo_geojson.pop() || this.getJSON();
+      this.refreshLayer();
+      return false;
     };
 
     LeafletWidget.prototype.searchKeyPress = function(e) {
@@ -115,8 +146,12 @@
         item.data('lat', geoname.lat).data('lng', geoname.lng).addClass('result').attr('title', JSON.stringify(geoname));
         item.click(function() {
           item = self.$(this);
-          self.map.setView(new L.LatLng(item.data('lat'), item.data('lng')), 12);
-          return self.results.parent().fadeOut();
+          self.undo_geojson.push(self.getJSON());
+          self.geojson.coordinates.push([item.data('lng'), item.data('lat')]);
+          self.zoomToFit();
+          self.refreshLayer();
+          self.results.parent().fadeOut();
+          return self.search.val('');
         });
         item.hover(function() {
           var bounds, marker, point;
@@ -201,7 +236,7 @@
     LeafletWidget.prototype.doMultiPoly = function(e, add) {};
 
     LeafletWidget.prototype.mapClick = function(e) {
-      this.undo_geojson = this.getJSON();
+      this.undo_geojson.push(this.getJSON());
       switch (this.options.geom_type) {
         case "Point":
           this.doPoint(e, true);
@@ -226,7 +261,7 @@
 
     LeafletWidget.prototype.featureClick = function(e) {
       return;
-      this.undo_geojson = this.getJSON();
+      this.undo_geojson.push(this.getJSON());
       switch (this.options.geom_type) {
         case "Point":
           this.doPoint(e, false);
