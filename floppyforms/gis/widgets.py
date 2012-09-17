@@ -108,7 +108,6 @@ class BaseGeometryWidget(forms.Textarea):
 
     def render(self, name, value, attrs=None):
         _value = value
-        print _value
         return super(BaseGeometryWidget, self).render(name, _value, attrs)
 
 
