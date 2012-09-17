@@ -10,8 +10,6 @@
     function LeafletWidget(options) {
       var layerUrl;
       this.options = options;
-      this.featureClick = __bind(this.featureClick, this);
-
       this.mapClick = __bind(this.mapClick, this);
 
       this.doMultiPoly = __bind(this.doMultiPoly, this);
@@ -32,6 +30,8 @@
 
       this.searchKeyPress = __bind(this.searchKeyPress, this);
 
+      this.redoChange = __bind(this.redoChange, this);
+
       this.undoChange = __bind(this.undoChange, this);
 
       this.clearFeatures = __bind(this.clearFeatures, this);
@@ -45,11 +45,13 @@
       this.textarea = this.$("#" + this.options.id);
       this.clear = this.$("#" + this.options.id + "_clear");
       this.undo = this.$("#" + this.options.id + "_undo");
+      this.redo = this.$("#" + this.options.id + "_redo");
       this.search = this.$("#" + this.options.id + "_search");
       this.searchBtn = this.$("#" + this.options.id + "_searchBtn");
       this.results = this.$("#" + options.id + "_search_result");
       this.searchURL = "http://ws.geonames.org/searchJSON?q={{LOCATION}}&maxRows=100";
       this.undo_geojson = [];
+      this.redo_geojson = [];
       this.geojson = this.getJSON();
       layerUrl = this.options.url;
       this.layer = new L.TileLayer(layerUrl, {
@@ -64,6 +66,7 @@
       this.map.on('click', this.mapClick);
       this.clear.bind('click', this.clearFeatures);
       this.undo.bind('click', this.undoChange);
+      this.redo.bind('click', this.redoChange);
       this.search.bind('keypress', this.searchKeyPress);
       this.searchBtn.bind('click', this.findLocations);
     }
@@ -119,11 +122,30 @@
         type: this.options.geom_type,
         coordinates: []
       };
-      return this.refreshLayer();
+      this.refreshLayer();
+      return false;
     };
 
     LeafletWidget.prototype.undoChange = function() {
-      this.geojson = this.undo_geojson.pop() || this.getJSON();
+      var _geojson;
+      _geojson = this.undo_geojson.pop();
+      if (!_geojson) {
+        return false;
+      }
+      this.redo_geojson.push(this.geojson);
+      this.geojson = _geojson;
+      this.refreshLayer();
+      return false;
+    };
+
+    LeafletWidget.prototype.redoChange = function() {
+      var _geojson;
+      _geojson = this.redo_geojson.pop();
+      if (!_geojson) {
+        return false;
+      }
+      this.undo_geojson.push(this.geojson);
+      this.geojson = _geojson;
       this.refreshLayer();
       return false;
     };
@@ -255,31 +277,6 @@
           break;
         case "MultiPolygon":
           this.doMultiPoly(e, true);
-      }
-      return this.refreshLayer();
-    };
-
-    LeafletWidget.prototype.featureClick = function(e) {
-      return;
-      this.undo_geojson.push(this.getJSON());
-      switch (this.options.geom_type) {
-        case "Point":
-          this.doPoint(e, false);
-          break;
-        case "MultiPoint":
-          this.doMultiPoint(e, false);
-          break;
-        case "LineString":
-          this.doLine(e, false);
-          break;
-        case "MultiLineString":
-          this.doMultiLine(e, false);
-          break;
-        case "Polygon":
-          this.doPoly(e, false);
-          break;
-        case "MultiPolygon":
-          this.doMultiPoly(e, false);
       }
       return this.refreshLayer();
     };
