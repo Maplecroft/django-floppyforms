@@ -3,6 +3,23 @@
   var LeafletWidget,
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
+  var ButtonsControl = L.Control.extend({
+      options: {
+	  position: 'bottomleft'
+      },
+
+      onAdd: function (map) {
+	  // create the control container with a particular class name
+	  var container = L.DomUtil.create('div', 'buttons-control');
+
+	  // Move the buttons (created in the template) into the
+	  // container.
+          var controls = document.getElementById('controls');
+	  container.appendChild(controls.parentNode.removeChild(controls));
+	  return container;
+      }
+  });
+
   LeafletWidget = (function() {
 
     function LeafletWidget(options) {
@@ -65,6 +82,9 @@
         'Sat': this.ggl_sat,
         'OSM': this.osm
       }, {}));
+
+      this.map.addControl(new ButtonsControl());
+
       this.map.setView(new L.LatLng(0, 0), 1);
       this.marker_group = new L.GeoJSON(this.geojson);
       this.map.addLayer(this.marker_group);
