@@ -17,10 +17,20 @@ class LeafletWidget
     @redo_geojson = []
     @geojson = @getJSON()
 
-    layerUrl = @options.url
-    @layer = new L.TileLayer(layerUrl, {minZoom: 1})
+    osmUrl = @options.url
+    @osm = new L.TileLayer(osmUrl, {minZoom: 1})
+    @ggl_sat = new L.Google('SATELLITE');
+    @ggl_road = new L.Google('ROADMAP');
+    @ggl_hy = new L.Google('HYBRID');
+    @map.addLayer(@ggl_hy)
+
+    @map.addControl(new L.Control.Layers({
+        'Hybrid': this.ggl_hy,
+        'Street': this.ggl_road,
+        'Sat': this.ggl_sat,
+        'OSM': this.osm}, {}));
+
     @map.setView(new L.LatLng(0, 0), 1)
-    @map.addLayer(@layer)
 
     @marker_group = new L.GeoJSON(@geojson)
     @map.addLayer(@marker_group)

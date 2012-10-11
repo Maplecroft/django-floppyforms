@@ -171,6 +171,8 @@ class BaseLeafletWidget(BaseGeometryWidget):
         js = (
             'http://cdn.leafletjs.com/leaflet-0.4/leaflet.js',
             'floppyforms/js/LeafletWidget.js',
+            'http://maps.google.com/maps/api/js?v=3.2&sensor=false',
+            'floppyforms/js/Google.js',
         )
         css = ({
             'all': (
