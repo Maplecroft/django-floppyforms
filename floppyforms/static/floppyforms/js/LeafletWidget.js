@@ -3,27 +3,10 @@
   var LeafletWidget,
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
-  var ButtonsControl = L.Control.extend({
-      options: {
-	  position: 'bottomleft'
-      },
-
-      onAdd: function (map) {
-	  // create the control container with a particular class name
-	  var container = L.DomUtil.create('div', 'buttons-control');
-
-	  // Move the buttons (created in the template) into the
-	  // container.
-          var controls = document.getElementById('controls');
-	  container.appendChild(controls.parentNode.removeChild(controls));
-	  return container;
-      }
-  });
-
   LeafletWidget = (function() {
 
     function LeafletWidget(options) {
-      var osmUrl;
+      var ButtonsControl, osmUrl;
       this.options = options;
       this.mapClick = __bind(this.mapClick, this);
 
@@ -55,6 +38,12 @@
 
       this.zoomToFit = __bind(this.zoomToFit, this);
 
+      this.doPlaceChanged = __bind(this.doPlaceChanged, this);
+
+      this.showHideControls = __bind(this.showHideControls, this);
+
+      this.doOnAdd = __bind(this.doOnAdd, this);
+
       this.$ = $ || django.jQuery;
       this.map = new L.Map(this.options.map_id);
       this.textarea = this.$("#" + this.options.id);
@@ -82,9 +71,6 @@
         'Sat': this.ggl_sat,
         'OSM': this.osm
       }, {}));
-
-      this.map.addControl(new ButtonsControl());
-
       this.map.setView(new L.LatLng(0, 0), 1);
       this.marker_group = new L.GeoJSON(this.geojson);
       this.map.addLayer(this.marker_group);
@@ -96,7 +82,66 @@
       this.redo.bind('click', this.redoChange);
       this.search.bind('keypress', this.searchKeyPress);
       this.searchBtn.bind('click', this.findLocations);
+      this.places_search_input = document.getElementById('g_places_search');
+      this.autocomplete = new google.maps.places.Autocomplete(this.places_search_input, {});
+      google.maps.event.addListener(this.autocomplete, 'place_changed', this.doPlaceChanged);
+      google.maps.event.addDomListener(this.places_search_input, 'keydown', function(e) {
+        if (e.keyCode === 13) {
+          if (e.preventDefault) {
+            return e.preventDefault();
+          } else {
+            e.cancelBubble = true;
+            return e.returnValue = false;
+          }
+        }
+      });
+      ButtonsControl = L.Control.extend({
+        options: {
+          position: 'bottomleft'
+        },
+        onAdd: this.doOnAdd
+      });
+      this.map.addControl(new ButtonsControl());
+      this.showHideControls();
     }
+
+    LeafletWidget.prototype.doOnAdd = function(map) {
+      var container, controls;
+      container = L.DomUtil.create('div', 'buttons-control');
+      controls = document.getElementById('controls');
+      container.appendChild(controls.parentNode.removeChild(controls));
+      return container;
+    };
+
+    LeafletWidget.prototype.showHideControls = function() {
+      if (this.undo_geojson.length > 0) {
+        this.undo.removeClass('disabled').attr('href', '#');
+      } else {
+        this.undo.addClass('disabled').removeAttr('href');
+      }
+      if (this.redo_geojson.length > 0) {
+        this.redo.removeClass('disabled').attr('href', '#');
+      } else {
+        this.redo.addClass('disabled').removeAttr('href');
+      }
+      if (this.geojson.coordinates.length > 0) {
+        return this.clear.removeClass('disabled').attr('href', '#');
+      } else {
+        return this.clear.addClass('disabled').removeAttr('href');
+      }
+    };
+
+    LeafletWidget.prototype.doPlaceChanged = function() {
+      var lng_lat, location;
+      this.undo_geojson.push(this.getJSON());
+      location = this.autocomplete.getPlace().geometry.location;
+      lng_lat = [location.lng(), location.lat()];
+      this.geojson.coordinates.push(lng_lat);
+      this.showHideControls();
+      this.zoomToFit();
+      this.refreshLayer();
+      return this.$('#g_places_search').attr('value', '');
+    };
 
     LeafletWidget.prototype.zoomToFit = function() {
       var bounds, coord, coords, northEast, southWest, _i, _len;
@@ -149,6 +194,7 @@
         type: this.options.geom_type,
         coordinates: []
       };
+      this.showHideControls();
       this.refreshLayer();
       return false;
     };
@@ -156,11 +202,13 @@
     LeafletWidget.prototype.undoChange = function() {
       var _geojson;
       _geojson = this.undo_geojson.pop();
+      this.showHideControls();
       if (!_geojson) {
         return false;
       }
       this.redo_geojson.push(this.geojson);
       this.geojson = _geojson;
+      this.showHideControls();
       this.refreshLayer();
       return false;
     };
@@ -168,11 +216,13 @@
     LeafletWidget.prototype.redoChange = function() {
       var _geojson;
       _geojson = this.redo_geojson.pop();
+      this.showHideControls();
       if (!_geojson) {
         return false;
       }
       this.undo_geojson.push(this.geojson);
       this.geojson = _geojson;
+      this.showHideControls();
       this.refreshLayer();
       return false;
     };
@@ -241,21 +291,23 @@
 
     LeafletWidget.prototype.doPoint = function(e, add) {
       if (add) {
-        return this.geojson.coordinates = [e.latlng.lng, e.latlng.lat];
+        this.geojson.coordinates = [e.latlng.lng, e.latlng.lat];
       } else {
-        return this.geojson.coordinates = [];
+        this.geojson.coordinates = [];
       }
+      return this.showHideControls();
     };
 
     LeafletWidget.prototype.doMultiPoint = function(e, add) {
       var index, point;
       point = [e.latlng.lng, e.latlng.lat];
       if (add) {
-        return this.geojson.coordinates.push(point);
+        this.geojson.coordinates.push(point);
       } else {
         index = this.geojson.coordinates.indexOf(point);
-        return this.geojson.coordinates.splice(index, 1);
+        this.geojson.coordinates.splice(index, 1);
       }
+      return this.showHideControls();
     };
 
     LeafletWidget.prototype.doLine = function(e, add) {
@@ -277,15 +329,17 @@
           if (this.geojson.coordinates[0][0] === point) {
             this.geojson.coordinates[0].unshift(last);
           }
-          return this.geojson.coordinates[0].push(last);
+          this.geojson.coordinates[0].push(last);
         }
       }
+      return this.showHideControls();
     };
 
     LeafletWidget.prototype.doMultiPoly = function(e, add) {};
 
     LeafletWidget.prototype.mapClick = function(e) {
       this.undo_geojson.push(this.getJSON());
+      this.showHideControls();
       switch (this.options.geom_type) {
         case "Point":
           this.doPoint(e, true);

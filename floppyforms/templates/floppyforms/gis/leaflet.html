@@ -1,5 +1,5 @@
 <style type="text/css">
-    #{{ attrs.id }}_search {
+    .search {
      cursor: pointer;
      min-width: 30px !important;
      border: 1px solid #ccc;
@@ -8,7 +8,7 @@
      background: #fdfdfd;
      margin: 0;
     }
-    #{{ attrs.id }}_search:focus {
+    .search:focus {
      -webkit-box-shadow: #ccc 0 0 6px; 
      box-shadow: #ccc 0 0 6px;
      outline: none;
@@ -43,18 +43,26 @@
     }
     #controls li {
      display: inline-block;
-     background: rgba(255, 255, 255, 0.75);
-     border-radius: 4px;
-     padding: 0 .3em;
-     margin: 0 3px;
-    }
-    #controls li:hover {
-     background: #fff;
     }
     #controls a {
      color: #000;
      font-weight: bold;
-     // text-decoration: underline;
+     border-radius: 4px;
+     padding: 0 .3em;
+     background: rgba(255, 255, 255, 0.75);
+     margin: 0 3px;
+     cursor: pointer;
+    }
+    #controls a:hover {
+     background: #fff;
+    }
+    #controls a.disabled {
+     background: rgba(255, 255, 255, 0.75);
+     cursor: default;
+     opacity: .5;
+    }
+    #controls a.disabled:hover {
+     background: rgba(255, 255, 255, 0.75);
     }
     #controls input {
      display: inline;
@@ -73,8 +81,9 @@
 
 <div style="float:left; margin-right:1em" id="{{ attrs.id }}_map"></div>
 <div style="float:left">
+<input class="{{ attrs.id }}_util search" id="g_places_search" placeholder="Google Places search..." style="margin-bottom:.5em" /><br />
 <!-- Find:<br /> -->
-<input class="{{ attrs.id }}_util" id="{{ attrs.id }}_search" /><br />
+<input class="{{ attrs.id }}_util search" id="{{ attrs.id }}_search" placeholder="GeoNames search..." /><br /> 
 <div id="{{ attrs.id }}_search_result_wrapper"><ul id="{{ attrs.id }}_search_result"></ul></div>
 <textarea name="{{ name }}"{% if required %} required{% endif %}{% include "floppyforms/attrs.html" %}>{{ value }}</textarea>
 </div>
