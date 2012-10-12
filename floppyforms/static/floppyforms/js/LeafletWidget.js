@@ -140,7 +140,7 @@
       this.showHideControls();
       this.zoomToFit();
       this.refreshLayer();
-      return this.$('#g_places_search').attr('value', '');
+      return this.$('#g_places_search').blur().attr('value', '');
     };
 
     LeafletWidget.prototype.zoomToFit = function() {

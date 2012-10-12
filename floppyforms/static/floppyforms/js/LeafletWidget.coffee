@@ -108,7 +108,7 @@ class LeafletWidget
     @showHideControls()
     @zoomToFit()
     @refreshLayer()
-    @$('#g_places_search').attr('value', '')
+    @$('#g_places_search').blur().attr('value', '')
 
   zoomToFit: =>
     coords = @geojson.coordinates
