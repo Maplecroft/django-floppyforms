@@ -17,10 +17,20 @@ class LeafletWidget
     @redo_geojson = []
     @geojson = @getJSON()
 
-    layerUrl = @options.url
-    @layer = new L.TileLayer(layerUrl, {minZoom: 1})
+    osmUrl = @options.url
+    @osm = new L.TileLayer(osmUrl, {minZoom: 1})
+    @ggl_sat = new L.Google('SATELLITE');
+    @ggl_road = new L.Google('ROADMAP');
+    @ggl_hy = new L.Google('HYBRID');
+    @map.addLayer(@ggl_hy)
+
+    @map.addControl(new L.Control.Layers({
+        'Hybrid': this.ggl_hy,
+        'Street': this.ggl_road,
+        'Sat': this.ggl_sat,
+        'OSM': this.osm}, {}));
+
     @map.setView(new L.LatLng(0, 0), 1)
-    @map.addLayer(@layer)
 
     @marker_group = new L.GeoJSON(@geojson)
     @map.addLayer(@marker_group)
@@ -34,6 +44,71 @@ class LeafletWidget
     @redo.bind('click', @redoChange)
     @search.bind('keypress', @searchKeyPress)
     @searchBtn.bind('click', @findLocations)
+
+    @places_search_input = document.getElementById('g_places_search')
+    @autocomplete = new google.maps.places.Autocomplete(
+      @places_search_input, {}) #types: ['(regions)']})
+    google.maps.event.addListener(
+      @autocomplete, 'place_changed', @doPlaceChanged)
+
+    # This prevents any containing form from being submitted if the
+    # user hits enter having selected an autocompletion search choice.
+    google.maps.event.addDomListener(@places_search_input, 'keydown', (e) -> 
+      if e.keyCode == 13
+        if e.preventDefault
+          e.preventDefault()
+        else
+          # Since the google event handler framework does not handle 
+          # early IE versions, we have to do it by our self. :-( 
+          e.cancelBubble = true
+          e.returnValue = false
+    )
+
+    ButtonsControl = L.Control.extend(
+      options: position: 'bottomleft'
+      onAdd: @doOnAdd
+    )
+
+    @map.addControl(new ButtonsControl())
+    @showHideControls()  
+
+  doOnAdd: (map) =>
+    # create the control container with a particular class name
+    container = L.DomUtil.create('div', 'buttons-control')
+
+    # Move the buttons (created in the template) into the
+    # container.
+    controls = document.getElementById('controls')
+    container.appendChild(controls.parentNode.removeChild(controls))
+    return container
+
+  showHideControls: =>
+    # Show/hide the clear/undo/redo buttons according to what's possible.
+    if @undo_geojson.length > 0
+      @undo.removeClass('disabled').attr('href', '#')
+    else
+      @undo.addClass('disabled').removeAttr('href')
+    if @redo_geojson.length > 0
+      @redo.removeClass('disabled').attr('href', '#')
+    else
+      @redo.addClass('disabled').removeAttr('href')
+    if @geojson.coordinates.length > 0
+      @clear.removeClass('disabled').attr('href', '#')
+    else
+      @clear.addClass('disabled').removeAttr('href')
+
+  doPlaceChanged: =>
+    # Called when user selects a place from the auto-suggested google
+    # places.  We add the selected location to the set of points and
+    # zoom appropriately to display them all.
+    @undo_geojson.push(@getJSON())
+    location = @autocomplete.getPlace().geometry.location
+    lng_lat = [location.lng(), location.lat()]
+    @geojson.coordinates.push(lng_lat)
+    @showHideControls()
+    @zoomToFit()
+    @refreshLayer()
+    @$('#g_places_search').blur().attr('value', '')
 
   zoomToFit: =>
     coords = @geojson.coordinates
@@ -68,34 +143,40 @@ class LeafletWidget
 
   clearFeatures: =>
     @undo_geojson.push(@getJSON())
-
     @geojson =
       type: @options.geom_type
       coordinates: []
+    @showHideControls()
     @refreshLayer()
 
     return no
 
   undoChange: =>
     _geojson = @undo_geojson.pop()
+    @showHideControls()
 
     if not _geojson
       return no
 
     @redo_geojson.push(@geojson)
     @geojson = _geojson
+    @showHideControls()
+    # @zoomToFit()
     @refreshLayer()
 
     return no
 
   redoChange: =>
     _geojson = @redo_geojson.pop()
+    @showHideControls()
 
     if not _geojson
       return no
 
     @undo_geojson.push(@geojson)
     @geojson = _geojson
+    @showHideControls()
+    # @zoomToFit()
     @refreshLayer()
 
     return no
@@ -119,6 +200,7 @@ class LeafletWidget
         item = self.$(@)
         self.undo_geojson.push(self.getJSON())
         self.geojson.coordinates.push([item.data('lng'), item.data('lat')])
+        self.showHideControls()  
         self.zoomToFit()
         self.refreshLayer()
         self.results.parent().fadeOut()
@@ -157,6 +239,7 @@ class LeafletWidget
       @geojson.coordinates = [e.latlng.lng, e.latlng.lat]
     else
       @geojson.coordinates = []
+    @showHideControls()   
     # handle click for a point geom
 
   doMultiPoint: (e, add) =>
@@ -167,6 +250,7 @@ class LeafletWidget
     else
       index = @geojson.coordinates.indexOf(point)
       @geojson.coordinates.splice(index, 1)
+    @showHideControls()  
 
   doLine: (e, add) =>
     # handle click for a line geom
@@ -188,12 +272,14 @@ class LeafletWidget
         if @geojson.coordinates[0][0] == point
           @geojson.coordinates[0].unshift(last)
         @geojson.coordinates[0].push last
+    @showHideControls()    
 
   doMultiPoly: (e, add) =>
     # handle click for a multipoly geom
 
   mapClick: (e) =>
     @undo_geojson.push(@getJSON())
+    @showHideControls()
     switch @options.geom_type
       when "Point" then @doPoint e, yes
       when "MultiPoint" then @doMultiPoint e, yes

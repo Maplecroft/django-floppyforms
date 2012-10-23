@@ -1,39 +1,93 @@
 <style type="text/css">
-    .{{ attrs.id }}_util { float: right; margin-left: 5px; cursor: pointer; min-width: 30px !important;}
+    .search {
+     cursor: pointer;
+     min-width: 30px !important;
+     border: 1px solid #ccc;
+     border-radius: 3px;
+     padding: 2px 5px;
+     background: #fdfdfd;
+     margin: 0;
+    }
+    .search:focus {
+     -webkit-box-shadow: #ccc 0 0 6px; 
+     box-shadow: #ccc 0 0 6px;
+     outline: none;
+    }
 	  #{{ attrs.id }}_map { width: {{ map_width }}px; height: {{ map_height }}px; }
 	  #{{ attrs.id }}_map .aligned label { float: inherit; }
     #{{ attrs.id }}_search_result_wrapper {
       display: none;
-      float: right;
       width: 300px;
-      max-height: 200px;
+      max-height: 320px;
       overflow-y: scroll;
       z-index: 1000;
-      position: absolute;
-      top: 55px;
-      right: 12px;
-/*       left: {{ map_width }}px; */
       background-color: white;
       padding: 5px;
-      border: 1px solid #666;
+      border: 1px solid #ccc;
+      border-radius: 3px;
     }
     #{{ attrs.id }}_search_result li:hover {
       cursor: pointer;
+      margin: 0;
+      float: none;
     }
 	{% if not display_wkt %}#{{ attrs.id }} { display: none; }{% endif %}
+    #controls {
+     background: rgba(0, 0, 0, 0.25);
+     padding: 4px 3px;
+     border-radius: 7px;
+    }
+    #controls ul {
+     z-index: 1000;
+     opacity: 1.0;
+    }
+    #controls li {
+     display: inline-block;
+    }
+    #controls a {
+     color: #000;
+     font-weight: bold;
+     border-radius: 4px;
+     padding: 0 .3em;
+     background: rgba(255, 255, 255, 0.75);
+     margin: 0 3px;
+     cursor: pointer;
+    }
+    #controls a:hover {
+     background: #fff;
+    }
+    #controls a.disabled {
+     background: rgba(255, 255, 255, 0.75);
+     cursor: default;
+     opacity: .5;
+    }
+    #controls a.disabled:hover {
+     background: rgba(255, 255, 255, 0.75);
+    }
+    #controls input {
+     display: inline;
+     z-index: 1000;
+     position: relative;
+    }
 </style>
 
-<a href="#" class="{{ attrs.id }}_util" id="{{ attrs.id }}_clear">Clear all features</a>
-<br/>
-<a href="#" class="{{ attrs.id }}_util" id="{{ attrs.id }}_undo">Undo</a>
-<br/>
-<a href="#" class="{{ attrs.id }}_util" id="{{ attrs.id }}_redo">Redo</a>
-<br/>
-<!-- <button class="{{ attrs.id }}_util grp-button" id="{{ attrs.id }}_searchBtn">Find</button> -->
-<input class="{{ attrs.id }}_util" id="{{ attrs.id }}_search" />
+<div id="controls">
+<ul>
+<li><a href="#" class="{{ attrs.id }}_util" id="{{ attrs.id }}_clear">Clear all features</a></li>
+<li><a href="#" class="{{ attrs.id }}_util" id="{{ attrs.id }}_undo">Undo</a></li>
+<li><a href="#" class="{{ attrs.id }}_util" id="{{ attrs.id }}_redo">Redo</a></li>
+</ul>
+</div>
+
+<div style="float:left; margin-right:1em" id="{{ attrs.id }}_map"></div>
+<div style="float:left">
+<input class="{{ attrs.id }}_util search" id="g_places_search" placeholder="Google Places search..." style="margin-bottom:.5em" /><br />
+<!-- Find:<br /> -->
+<input class="{{ attrs.id }}_util search" id="{{ attrs.id }}_search" placeholder="GeoNames search..." /><br /> 
 <div id="{{ attrs.id }}_search_result_wrapper"><ul id="{{ attrs.id }}_search_result"></ul></div>
-<div id="{{ attrs.id }}_map"></div>
 <textarea name="{{ name }}"{% if required %} required{% endif %}{% include "floppyforms/attrs.html" %}>{{ value }}</textarea>
+</div>
+
 <script type="text/javascript">
     {% block map_options %}var map_options = {};{% endblock %}
     {% block options %}var options = {

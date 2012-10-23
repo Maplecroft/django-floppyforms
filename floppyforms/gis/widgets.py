@@ -1,3 +1,4 @@
+from urllib import urlencode
 from django.conf import settings
 from django.utils import translation
 
@@ -15,6 +16,25 @@ __all__ = ('GeometryWidget', 'GeometryCollectionWidget',
            'BaseGeometryWidget', 'BaseMetacartaWidget',
            'BaseOsmWidget', 'BaseGMapWidget',
            'BaseLeafletWidget',)
+
+
+def _google_api_args():
+    m = {'sensor': 'false', 'libraries': 'places'}
+
+    # If not in DEBUG mode, and GOOGLE_MAPS_API_CLIENT_ID setting is
+    # defined, use it as client_id when loading the googleapis
+    # library.  If you stick a ! at the start of
+    # GOOGLE_MAPS_API_CLIENT_ID it will be used even in DEBUG mode.
+    raw_client_id = getattr(settings, 'GOOGLE_MAPS_API_CLIENT_ID', None)
+    if (raw_client_id
+        and (not getattr(settings, 'DEBUG') or raw_client_id.startswith('!'))):
+        client_id = raw_client_id.lstrip('!')
+    else:
+        client_id = None
+    if client_id:
+        m['client_id'] = client_id
+
+    return m
 
 
 class BaseGeometryWidget(forms.Textarea):
@@ -171,6 +191,9 @@ class BaseLeafletWidget(BaseGeometryWidget):
         js = (
             'http://cdn.leafletjs.com/leaflet-0.4/leaflet.js',
             'floppyforms/js/LeafletWidget.js',
+            'http://maps.googleapis.com/maps/api/js?%s' % urlencode(
+                _google_api_args()),
+            'floppyforms/js/Google.js',
         )
         css = ({
             'all': (
