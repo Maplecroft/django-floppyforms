@@ -247,6 +247,7 @@
           item = self.$(this);
           self.undo_geojson.push(self.getJSON());
           self.geojson.coordinates.push([item.data('lng'), item.data('lat')]);
+          self.showHideControls();
           self.zoomToFit();
           self.refreshLayer();
           self.results.parent().fadeOut();
