@@ -18,11 +18,13 @@ class LeafletWidget
     @geojson = @getJSON()
 
     osmUrl = @options.url
-    @osm = new L.TileLayer(osmUrl, {minZoom: 1})
+    @osm = new L.TileLayer(osmUrl)
     @ggl_sat = new L.Google('SATELLITE');
     @ggl_road = new L.Google('ROADMAP');
     @ggl_hy = new L.Google('HYBRID');
     @map.addLayer(@ggl_hy)
+    @map.options.minZoom = 1
+    @map.options.maxZoom = 18
 
     @map.addControl(new L.Control.Layers({
         'Hybrid': this.ggl_hy,
@@ -70,7 +72,7 @@ class LeafletWidget
     )
 
     @map.addControl(new ButtonsControl())
-    @showHideControls()  
+    @showHideControls()
 
   doOnAdd: (map) =>
     # create the control container with a particular class name
@@ -113,17 +115,20 @@ class LeafletWidget
   zoomToFit: =>
     coords = @geojson.coordinates
     if coords and coords.length > 0
-      northEast = new L.LatLng(coords[0][1], coords[0][0])
-      southWest = new L.LatLng(coords[0][1], coords[0][0])
+      # Pad the bounds by this amount, so that zooming on a single point
+      # doesn't take us in too close.
+      padding = 0.005
+      northEast = new L.LatLng(coords[0][1] + padding, coords[0][0] + padding)
+      southWest = new L.LatLng(coords[0][1] - padding, coords[0][0] - padding)
       for coord in coords
         if coord[1] > northEast.lat
-          northEast.lat = coord[1]
+          northEast.lat = coord[1] + padding
         if coord[0] > northEast.lng
-          northEast.lng = coord[0]
+          northEast.lng = coord[0] + padding
         if coord[1] < southWest.lat
-          southWest.lat = coord[1]
+          southWest.lat = coord[1] - padding
         if coord[0] < southWest.lng
-          southWest.lng = coord[0]
+          southWest.lng = coord[0] - padding
       bounds = new L.LatLngBounds(southWest, northEast)
       @map.fitBounds(bounds)
 

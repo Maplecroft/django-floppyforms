@@ -58,13 +58,13 @@
       this.redo_geojson = [];
       this.geojson = this.getJSON();
       osmUrl = this.options.url;
-      this.osm = new L.TileLayer(osmUrl, {
-        minZoom: 1
-      });
+      this.osm = new L.TileLayer(osmUrl);
       this.ggl_sat = new L.Google('SATELLITE');
       this.ggl_road = new L.Google('ROADMAP');
       this.ggl_hy = new L.Google('HYBRID');
       this.map.addLayer(this.ggl_hy);
+      this.map.options.minZoom = 1;
+      this.map.options.maxZoom = 18;
       this.map.addControl(new L.Control.Layers({
         'Hybrid': this.ggl_hy,
         'Street': this.ggl_road,
@@ -144,24 +144,25 @@
     };
 
     LeafletWidget.prototype.zoomToFit = function() {
-      var bounds, coord, coords, northEast, southWest, _i, _len;
+      var bounds, coord, coords, northEast, padding, southWest, _i, _len;
       coords = this.geojson.coordinates;
       if (coords && coords.length > 0) {
-        northEast = new L.LatLng(coords[0][1], coords[0][0]);
-        southWest = new L.LatLng(coords[0][1], coords[0][0]);
+        padding = 0.005;
+        northEast = new L.LatLng(coords[0][1] + padding, coords[0][0] + padding);
+        southWest = new L.LatLng(coords[0][1] - padding, coords[0][0] - padding);
         for (_i = 0, _len = coords.length; _i < _len; _i++) {
           coord = coords[_i];
           if (coord[1] > northEast.lat) {
-            northEast.lat = coord[1];
+            northEast.lat = coord[1] + padding;
           }
           if (coord[0] > northEast.lng) {
-            northEast.lng = coord[0];
+            northEast.lng = coord[0] + padding;
           }
           if (coord[1] < southWest.lat) {
-            southWest.lat = coord[1];
+            southWest.lat = coord[1] - padding;
           }
           if (coord[0] < southWest.lng) {
-            southWest.lng = coord[0];
+            southWest.lng = coord[0] - padding;
           }
         }
         bounds = new L.LatLngBounds(southWest, northEast);
