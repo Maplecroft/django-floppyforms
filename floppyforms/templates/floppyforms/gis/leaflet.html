@@ -87,6 +87,7 @@
 <div id="{{ attrs.id }}_search_result_wrapper"><ul id="{{ attrs.id }}_search_result"></ul></div>
 <textarea name="{{ name }}"{% if required %} required{% endif %}{% include "floppyforms/attrs.html" %}>{{ value }}</textarea>
 </div>
+<div style="clear:both"> </div>
 
 <script type="text/javascript">
     {% block map_options %}var map_options = {};{% endblock %}
