@@ -32,7 +32,7 @@ def _google_api_args():
     else:
         client_id = None
     if client_id:
-        m['client_id'] = client_id
+        m['client'] = client_id
 
     return m
 
