@@ -1,19 +1,18 @@
 Django-floppyforms
 ==================
 
-.. image:: https://secure.travis-ci.org/brutasse/django-floppyforms.png
+.. image:: https://api.travis-ci.org/brutasse/django-floppyforms.png
    :alt: Build Status
-   :target: https://secure.travis-ci.org/brutasse/django-floppyforms
+   :target: https://travis-ci.org/brutasse/django-floppyforms
 
 Full control of form rendering in the templates.
 
 * Author: Bruno Renié and `contributors`_
 * Licence: BSD
-* Compatibility: Django 1.3+
 * Requirements: homework -- read `this`_.
 
 .. _contributors: https://github.com/brutasse/django-floppyforms/contributors
-.. _this: http://diveintohtml5.ep.io/forms.html
+.. _this: http://diveintohtml5.info/forms.html
 
 Installation
 ------------
@@ -57,7 +56,7 @@ Get the code::
 Install the development requirements::
 
     pip install -r requirements/tests.txt
-    pip install django  # must be django 1.3 or above
+    pip install django  # must be django 1.4.2 or above
 
 Run the tests::
 

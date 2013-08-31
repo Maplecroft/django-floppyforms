@@ -3,21 +3,17 @@ import re
 import datetime
 
 from django import forms
+from django.forms.util import to_current_timezone
+from django.forms.widgets import FILE_INPUT_CONTRADICTION
 from django.conf import settings
 from django.template import loader
 from django.utils.datastructures import MultiValueDict, MergeDict
 from django.utils.html import conditional_escape
-from django.utils.encoding import force_unicode
 from django.utils.translation import ugettext_lazy as _
-from django.utils import datetime_safe
+from django.utils import datetime_safe, formats, six
 from django.utils.dates import MONTHS
-from django.utils import formats
+from django.utils.encoding import force_text
 
-try:
-    from django.forms.util import to_current_timezone
-except ImportError:
-    # Dummy timzone converter
-    to_current_timezone = lambda value: value  # noqa
 
 RE_DATE = re.compile(r'(\d{4})-(\d\d?)-(\d\d?)$')
 
@@ -30,6 +26,7 @@ __all__ = (
     'ColorInput', 'EmailInput', 'URLInput', 'PhoneNumberInput', 'NumberInput',
     'IPAddressInput', 'MultiWidget', 'Widget', 'SplitDateTimeWidget',
     'SplitHiddenDateTimeWidget', 'MultipleHiddenInput', 'SelectDateWidget',
+    'SlugInput',
 )
 
 
@@ -40,8 +37,12 @@ class Widget(forms.Widget):
 class Input(Widget):
     template_name = 'floppyforms/input.html'
     input_type = None
+    datalist = None
 
     def __init__(self, *args, **kwargs):
+        datalist = kwargs.pop('datalist', None)
+        if datalist is not None:
+            self.datalist = datalist
         super(Input, self).__init__(*args, **kwargs)
         self.context_instance = None
 
@@ -51,7 +52,7 @@ class Input(Widget):
     def _format_value(self, value):
         if self.is_localized:
             value = formats.localize_input(value)
-        return force_unicode(value)
+        return force_text(value)
 
     def get_context(self, name, value, attrs=None):
         context = {
@@ -84,14 +85,16 @@ class Input(Widget):
                 if not isinstance(attr, bool):
                     context['attrs'][key] = str(attr)
 
-        if self.context_instance is None:
-            return context
-        self.context_instance.update(context)
-        return self.context_instance
+        if self.datalist is not None:
+            context['datalist'] = self.datalist
+        return context
 
     def render(self, name, value, attrs=None, **kwargs):
         context = self.get_context(name, value, attrs=attrs or {}, **kwargs)
-        return loader.render_to_string(self.template_name, context)
+        return loader.render_to_string(
+            self.template_name,
+            dictionary=context,
+            context_instance=self.context_instance)
 
 
 class TextInput(Input):
@@ -135,7 +138,7 @@ class MultipleHiddenInput(HiddenInput):
                 input_attrs['id'] = '%s_%s' % (id_, i)
             input_ = HiddenInput()
             input_.is_required = self.is_required
-            inputs.append(input_.render(name, force_unicode(v), input_attrs))
+            inputs.append(input_.render(name, force_text(v), input_attrs))
         return "\n".join(inputs)
 
     def value_from_datadict(self, data, files, name):
@@ -181,9 +184,6 @@ class FileInput(Input):
         if data is None:
             return False
         return True
-
-
-FILE_INPUT_CONTRADICTION = object()
 
 
 class ClearableFileInput(FileInput):
@@ -234,7 +234,7 @@ class Textarea(Input):
         super(Textarea, self).__init__(default_attrs)
 
     def _format_value(self, value):
-        return conditional_escape(force_unicode(value))
+        return conditional_escape(force_text(value))
 
 
 class DateInput(Input):
@@ -250,9 +250,7 @@ class DateInput(Input):
             self.manual_format = False
 
     def _format_value(self, value):
-        if self.is_localized and not self.manual_format:
-            return formats.localize_input(value)
-        elif hasattr(value, 'strftime'):
+        if hasattr(value, 'strftime'):
             value = datetime_safe.new_date(value)
             return value.strftime(self.format)
         return value
@@ -281,9 +279,7 @@ class DateTimeInput(Input):
             self.manual_format = False
 
     def _format_value(self, value):
-        if self.is_localized and not self.manual_format:
-            return formats.localize_input(value)
-        elif hasattr(value, 'strftime'):
+        if hasattr(value, 'strftime'):
             value = datetime_safe.new_datetime(value)
             return value.strftime(self.format)
         return value
@@ -312,9 +308,7 @@ class TimeInput(Input):
             self.manual_format = False
 
     def _format_value(self, value):
-        if self.is_localized and not self.manual_format:
-            return formats.localize_input(value)
-        elif hasattr(value, 'strftime'):
+        if hasattr(value, 'strftime'):
             return value.strftime(self.format)
         return value
 
@@ -356,7 +350,7 @@ class NumberInput(Input):
         if attrs:
             default_attrs.update(attrs)
         # Popping attrs if they're not set
-        for key in default_attrs.keys():
+        for key in list(default_attrs.keys()):
             if default_attrs[key] is None:
                 default_attrs.pop(key)
         super(NumberInput, self).__init__(default_attrs)
@@ -370,21 +364,19 @@ class PhoneNumberInput(Input):
     input_type = 'tel'
 
 
+def boolean_check(v):
+    return not (v is False or v is None or v == '')
+
+
 class CheckboxInput(Input, forms.CheckboxInput):
     input_type = 'checkbox'
 
     def __init__(self, attrs=None, check_test=None):
         super(CheckboxInput, self).__init__(attrs)
-        if check_test is None:
-            check_test = lambda v: not (v is False or v is None or v == '')
-        self.check_test = check_test
+        self.check_test = boolean_check if check_test is None else check_test
 
     def get_context(self, name, value, attrs):
-        result = False
-        try:
-            result = self.check_test(value)
-        except:  # That bare except is in the Django code...
-            pass
+        result = self.check_test(value)
         context = super(CheckboxInput, self).get_context(name, value, attrs)
         if result:
             context['attrs']['checked'] = True
@@ -394,7 +386,7 @@ class CheckboxInput(Input, forms.CheckboxInput):
         if value in ('', True, False, None):
             value = None
         else:
-            value = force_unicode(value)
+            value = force_text(value)
         return value
 
     def value_from_datadict(self, data, files, name):
@@ -402,11 +394,14 @@ class CheckboxInput(Input, forms.CheckboxInput):
             return False
         value = data.get(name)
         values = {'true': True, 'false': False}
-        if isinstance(value, basestring):
+        if isinstance(value, six.text_type):
             value = values.get(value.lower(), value)
         return value
 
     def _has_changed(self, initial, data):
+        if initial == 'False':
+            # show_hidden_initial may have transformed False to 'False'
+            initial = False
         return bool(initial) != bool(data)
 
 
@@ -419,7 +414,8 @@ class Select(Input):
         self.choices = list(choices)
 
     def get_context(self, name, value, attrs=None, choices=()):
-        if not hasattr(value, '__iter__'):
+        if not hasattr(value, '__iter__') or isinstance(value,
+                                                        six.string_types):
             value = [value]
         context = super(Select, self).get_context(name, value, attrs)
 
@@ -442,10 +438,10 @@ class Select(Input):
             if isinstance(option_label, (list, tuple)):
                 group = []
                 for val, lab in option_label:
-                    group.append((force_unicode(val), lab))
+                    group.append((force_text(val), lab))
                 groups.append((option_value, group))
             else:
-                option_value = force_unicode(option_value)
+                option_value = force_text(option_value)
                 if groups and groups[-1][0] is None:
                     groups[-1][1].append((option_value, option_label))
                 else:
@@ -456,7 +452,7 @@ class Select(Input):
     def _format_value(self, value):
         if len(value) == 1 and value[0] is None:
             return []
-        return set(force_unicode(v) for v in value)
+        return set(force_text(v) for v in value)
 
 
 class NullBooleanSelect(Select):
@@ -497,7 +493,7 @@ class SelectMultiple(Select):
     def _format_value(self, value):
         if len(value) == 1 and value[0] is None:
             value = []
-        return [force_unicode(v) for v in value]
+        return [force_text(v) for v in value]
 
     def value_from_datadict(self, data, files, name):
         if isinstance(data, (MultiValueDict, MergeDict)):
@@ -511,8 +507,8 @@ class SelectMultiple(Select):
             data = []
         if len(initial) != len(data):
             return True
-        initial_set = set([force_unicode(value) for value in initial])
-        data_set = set([force_unicode(value) for value in data])
+        initial_set = set([force_text(value) for value in initial])
+        data_set = set([force_text(value) for value in data])
         return data_set != initial_set
 
 
@@ -611,7 +607,7 @@ class SelectDateWidget(forms.Widget):
             year_val, month_val, day_val = value.year, value.month, value.day
         except AttributeError:
             year_val = month_val = day_val = None
-            if isinstance(value, basestring):
+            if isinstance(value, six.text_type):
                 if settings.USE_L10N:
                     try:
                         input_format = formats.get_format(
@@ -632,11 +628,24 @@ class SelectDateWidget(forms.Widget):
         context['year_choices'] = [(i, i) for i in self.years]
         context['year_val'] = year_val
 
-        context['month_choices'] = MONTHS.items()
+        context['month_choices'] = list(MONTHS.items())
         context['month_val'] = month_val
 
         context['day_choices'] = [(i, i) for i in range(1, 32)]
         context['day_val'] = day_val
+
+        # Theoretically the widget should use self.is_required to determine
+        # whether the field is required. For some reason this widget gets a
+        # required parameter. The Django behaviour is preferred in this
+        # implementation.
+
+        # Django also adds none_value only if there is no value. The choice
+        # here is to treat the Django behaviour as a bug: if the value isn't
+        # required, then it can be unset.
+        if self.required is False:
+            context['year_choices'].insert(0, self.none_value)
+            context['month_choices'].insert(0, self.none_value)
+            context['day_choices'].insert(0, self.none_value)
 
         return loader.render_to_string(self.template_name, context)
 

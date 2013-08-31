@@ -1,4 +1,3 @@
-import re
 from collections import defaultdict
 from contextlib import contextmanager
 
@@ -7,68 +6,9 @@ from django.forms.forms import BoundField
 from django.forms.util import ErrorList
 from django.template import (Library, Node, Variable,
                              TemplateSyntaxError, VariableDoesNotExist)
+from django.template.base import token_kwargs
 from django.template.loader import get_template
-
-try:
-    from django.utils.functional import empty
-except ImportError:
-    empty = None  # noqa
-
-try:
-    from django.template.base import token_kwargs
-except ImportError:
-    # Regex for token keyword arguments
-    kwarg_re = re.compile(r"(?:(\w+)=)?(.+)")
-
-    def token_kwargs(bits, parser, support_legacy=False):  # noqa
-        """
-        A utility method for parsing token keyword arguments.
-
-        :param bits: A list containing remainder of the token (split by spaces)
-            that is to be checked for arguments. Valid arguments will be removed
-            from this list.
-
-        :param support_legacy: If set to true ``True``, the legacy format
-            ``1 as foo`` will be accepted. Otherwise, only the standard ``foo=1``
-            format is allowed.
-
-        :returns: A dictionary of the arguments retrieved from the ``bits`` token
-            list.
-
-        There is no requirement for all remaining token ``bits`` to be keyword
-        arguments, so the dictionary will be returned as soon as an invalid
-        argument format is reached.
-        """
-        if not bits:
-            return {}
-        match = kwarg_re.match(bits[0])
-        kwarg_format = match and match.group(1)
-        if not kwarg_format:
-            if not support_legacy:
-                return {}
-            if len(bits) < 3 or bits[1] != 'as':
-                return {}
-
-        kwargs = {}
-        while bits:
-            if kwarg_format:
-                match = kwarg_re.match(bits[0])
-                if not match or not match.group(1):
-                    return kwargs
-                key, value = match.groups()
-                del bits[:1]
-            else:
-                if len(bits) < 3 or bits[1] != 'as':
-                    return kwargs
-                key, value = bits[2], bits[0]
-                del bits[:3]
-            kwargs[key] = parser.compile_filter(value)
-            if bits and not kwarg_format:
-                if bits[0] != 'and':
-                    return kwargs
-                del bits[:1]
-        return kwargs
-
+from django.utils.functional import empty
 
 register = Library()
 
@@ -83,6 +23,7 @@ class ConfigFilter(object):
     * the bound field passed into the constructor equals the filtered field.
     * the string passed into the constructor equals the fields name.
     * the string passed into the constructor equals the field's class name.
+    * the string passed into the constructor equals the field's widget class name.
     """
     def __init__(self, var):
         self.var = var
@@ -97,7 +38,17 @@ class ConfigFilter(object):
                     return True
         if self.var == bound_field.name:
             return True
+        # ignore 'object' in the mro, because it would be a match-all filter
+        # anyway. And 'object' could clash with a field that is named the
+        # same.
         for class_ in bound_field.field.__class__.__mro__:
+            if class_.__name__ == 'object':
+                continue
+            if self.var == class_.__name__:
+                return True
+        for class_ in bound_field.field.widget.__class__.__mro__:
+            if class_.__name__ == 'object':
+                continue
             if self.var == class_.__name__:
                 return True
 
@@ -377,7 +328,7 @@ class ModifierBase(BaseFormNode):
         if self.options['with']:
             extra_context = dict([
                 (name, var.resolve(context))
-                for name, var in self.options['with'].iteritems()])
+                for name, var in self.options['with'].items()])
             config.configure(self.context_config_name,
                              extra_context, filter=filter)
         return u''
@@ -502,12 +453,15 @@ class BaseFormRenderNode(BaseFormNode):
         if self.options['with']:
             extra_context.update(dict([
                 (name, var.resolve(context))
-                for name, var in self.options['with'].iteritems()]))
+                for name, var in self.options['with'].items()]))
 
         return extra_context
 
     def render(self, context):
         only = self.options['only']
+
+        config = self.get_config(context)
+        config.push()
 
         extra_context = self.get_extra_context(context)
         nodelist = self.get_nodelist(context, extra_context)
@@ -516,12 +470,14 @@ class BaseFormRenderNode(BaseFormNode):
 
         if only:
             context = context.new(extra_context)
-            return nodelist.render(context)
+            output = nodelist.render(context)
         else:
             context.update(extra_context)
             output = nodelist.render(context)
             context.pop()
-            return output
+
+        config.pop()
+        return output
 
 
 class FormNode(BaseFormRenderNode):
@@ -613,11 +569,11 @@ class FormRowNode(BaseFormRenderNode):
 @contextmanager
 def attributes(widget, **kwargs):
     old = {}
-    for name, value in kwargs.iteritems():
+    for name, value in kwargs.items():
         old[name] = getattr(widget, name, empty)
         setattr(widget, name, value)
     yield widget
-    for name, value in old.iteritems():
+    for name, value in old.items():
         if value is not empty:
             setattr(widget, name, value)
 
@@ -671,11 +627,15 @@ class FormFieldNode(BaseFormRenderNode):
             context.update(extra_context)
             context_instance = context
 
+        config.push()
+
         # Using a context manager here until Django's BoundField takes
         # template name and context instance parameters
         with attributes(widget, template_name=template_name,
                         context_instance=context_instance) as widget:
             output = bound_field.as_widget(widget=widget)
+
+        config.pop()
 
         if not self.options['only']:
             context.pop()

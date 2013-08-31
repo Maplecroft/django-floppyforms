@@ -1,6 +1,6 @@
 from urllib import urlencode
 from django.conf import settings
-from django.utils import translation
+from django.utils import translation, six
 
 try:
     from django.contrib.gis import gdal, geos
@@ -82,7 +82,7 @@ class BaseGeometryWidget(forms.Textarea):
     def get_context(self, name, value, attrs=None, extra_context={}):
         # If a string reaches here (via a validation error on another
         # field) then just reconstruct the Geometry.
-        if isinstance(value, basestring):
+        if isinstance(value, six.text_type):
             try:
                 value = geos.GEOSGeometry(value)
             except (geos.GEOSException, ValueError):
@@ -206,7 +206,7 @@ class BaseMetacartaWidget(BaseGeometryWidget):
 
     class Media:
         js = (
-            'http://openlayers.org/api/2.10/OpenLayers.js',
+            'http://openlayers.org/api/OpenLayers.js',
             'floppyforms/js/MapWidget.js',
         )
 
@@ -218,7 +218,7 @@ class BaseOsmWidget(BaseGeometryWidget):
 
     class Media:
         js = (
-            'http://openlayers.org/api/2.10/OpenLayers.js',
+            'http://openlayers.org/api/OpenLayers.js',
             'http://www.openstreetmap.org/openlayers/OpenStreetMap.js',
             'floppyforms/js/MapWidget.js',
         )
@@ -230,9 +230,8 @@ class BaseGMapWidget(BaseGeometryWidget):
     template_name = 'floppyforms/gis/google.html'
 
     class Media:
-        # FIXME: use proper Openlayers release
         js = (
-            'http://openlayers.org/dev/OpenLayers.js',
+            'http://openlayers.org/api/OpenLayers.js',
             'floppyforms/js/MapWidget.js',
             'http://maps.google.com/maps/api/js?sensor=false',
         )

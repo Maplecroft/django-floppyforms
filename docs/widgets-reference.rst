@@ -6,6 +6,15 @@ For each widgets, the default class attributes.
 .. module:: floppyforms.widgets
    :synopsis: FloppyForm's form widgets
 
+.. class:: Input
+
+    .. attribute:: Input.datalist
+
+        A list of possible values, which will be rendered as a ``<datalist>``
+        element tied to the input. Note that the list of options passed as
+        ``datalist`` elements are only **suggestions** and are not related to
+        form validation.
+
 .. class:: TextInput
 
     .. attribute:: TextInput.template_name
@@ -284,9 +293,9 @@ For each widgets, the default class attributes.
 
         ``'floppyforms/checkbox_select.html'``
 
-.. class:: MultiWdiget
+.. class:: MultiWidget
 
-   The same as ``django.forms.widgets.MultiWdiget``. The rendering can be
+   The same as ``django.forms.widgets.MultiWidget``. The rendering can be
    customized by overriding ``format_output``, which joins all the rendered
    widgets.
 

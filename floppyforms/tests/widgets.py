@@ -1,23 +1,29 @@
 import datetime
 import os
 
-from django.conf import settings
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import models
+from django.template import Context, Template
+from django.test import TestCase
+from django.test.utils import override_settings
 from django.utils.dates import MONTHS
-
-try:
-    from django.utils.timezone import now
-except ImportError:
-    now = datetime.datetime.now  # noqa
-
-from .base import FloppyFormsTestCase
+from django.utils.encoding import python_2_unicode_compatible
+from django.utils.timezone import now
 
 import floppyforms as forms
+
 from .base import InvalidVariable
 
 
-class WidgetRenderingTest(FloppyFormsTestCase):
+@python_2_unicode_compatible
+class SomeModel(models.Model):
+    some_field = models.CharField(max_length=255)
+
+    def __str__(self):
+        return u'%s' % self.some_field
+
+
+class WidgetRenderingTest(TestCase):
     """Testing the rendering of the different widgets."""
     maxDiff = None
 
@@ -776,6 +782,19 @@ class WidgetRenderingTest(FloppyFormsTestCase):
         self.assertFalse(IPv4Form(data={'ip': '500.500.1.1'}).is_valid())
         self.assertTrue(IPv4Form(data={'ip': '250.100.1.8'}).is_valid())
 
+    def test_generic_ip_address(self):
+        """<input type=text>"""
+        class GenericIPForm(forms.Form):
+            ip = forms.GenericIPAddressField()
+
+        with self.assertTemplateUsed('floppyforms/input.html'):
+            rendered = GenericIPForm().as_p()
+        self.assertHTMLEqual(rendered, """
+        <p>
+            <label for="id_ip">Ip:</label>
+            <input type="text" name="ip" id="id_ip" required>
+        </p>""")
+
     def test_typed_choice_field(self):
         """foo = forms.TypedChoiceField()"""
         TYPE_CHOICES = (
@@ -841,31 +860,11 @@ class WidgetRenderingTest(FloppyFormsTestCase):
 
     def test_model_choice_field(self):
         """ModelChoiceField and ModelMultipleChoiceField"""
-
-        class SomeModel(models.Model):
-            some_field = models.CharField(max_length=255)
-
-            def __unicode__(self):
-                return u'%s' % self.some_field
-
-        fake_items = [
-            SomeModel(some_field='Meh', pk=1),
-            SomeModel(some_field='Bah', pk=2),
-        ]
-
-        class HackedQuerySet(models.query.QuerySet):
-            """Yield results with no DB"""
-            def iterator(self):
-                for obj in fake_items:
-                    yield obj
-
-            def get(self, *args, **kwargs):
-                return fake_items[0]
-
-        queryset = HackedQuerySet(model=SomeModel)
+        SomeModel.objects.create(some_field='Meh')
+        SomeModel.objects.create(some_field='Bah')
 
         class ModelChoiceForm(forms.Form):
-            mod = forms.ModelChoiceField(queryset=queryset)
+            mod = forms.ModelChoiceField(queryset=SomeModel.objects.all())
 
         rendered = ModelChoiceForm().as_p()
         self.assertHTMLEqual(rendered, """
@@ -890,7 +889,7 @@ class WidgetRenderingTest(FloppyFormsTestCase):
         </p>""")
 
         class MultiModelForm(forms.Form):
-            mods = forms.ModelMultipleChoiceField(queryset=queryset)
+            mods = forms.ModelMultipleChoiceField(queryset=SomeModel.objects.all())
 
         rendered = MultiModelForm().as_p()
         self.assertHTMLEqual(rendered, """
@@ -1024,12 +1023,19 @@ class WidgetRenderingTest(FloppyFormsTestCase):
         self.assertTrue(' id="id_dt_year"' in rendered, rendered)
         self.assertTrue(' id="id_dt_month"' in rendered, rendered)
         self.assertTrue(' id="id_dt_day"' in rendered, rendered)
+        self.assertEqual(rendered.count('<option value="0">---</option>'), 0)
 
         class SelectDateForm(forms.Form):
             dt = forms.DateField(initial='%s-09-09' % today.year,
                                  widget=forms.SelectDateWidget)
         rendered = SelectDateForm().as_p()
         self.assertTrue(str(today.year) in rendered, rendered)
+        self.assertEqual(rendered.count('<option value="0">---</option>'), 0)
+
+        class SelectDateForm(forms.Form):
+            dt = forms.DateField(widget=forms.SelectDateWidget(required=False))
+        rendered = SelectDateForm().as_p()
+        self.assertEqual(rendered.count('<option value="0">---</option>'), 3)
 
     def test_no_attrs_rendering(self):
         widget = forms.TextInput()
@@ -1102,7 +1108,7 @@ class WidgetRenderingTest(FloppyFormsTestCase):
             def clean_file_(self):
                 raise forms.ValidationError('Some error')
 
-        file_ = SimpleUploadedFile('name', 'some contents')
+        file_ = SimpleUploadedFile('name', b'some contents')
 
         form = Form(files={'file_': file_})
         valid = form.is_valid()
@@ -1135,7 +1141,7 @@ class WidgetRenderingTest(FloppyFormsTestCase):
     def test_range_input(self):
         class Form(forms.Form):
             foo = forms.CharField(widget=forms.RangeInput(attrs={
-                'min': 1, 'max': 10L, 'step': 1, 'bar': 1.0
+                'min': 1, 'max': 10, 'step': 1, 'bar': 1.0
             }))
 
         rendered = Form(initial={'foo': 5}).as_p()
@@ -1145,13 +1151,71 @@ class WidgetRenderingTest(FloppyFormsTestCase):
             <input type="range" name="foo" value="5" required max="10" step="1" bar="1.0" id="id_foo" min="1">
         </p>""")
 
+    def test_datalist(self):
+        class Form(forms.Form):
+            foo = forms.CharField(widget=forms.TextInput(
+                datalist=['Foo', 'Bar', 'Baz'],
+            ))
+
+        rendered = Form().as_p()
+        self.assertHTMLEqual(rendered, """
+        <p>
+            <label for="id_foo">Foo:</label>
+            <input type="text" name="foo" required id="id_foo" list="id_foo_list">
+            <datalist id="id_foo_list">
+                <option value="Foo">
+                <option value="Bar">
+                <option value="Baz">
+            </datalist>
+        </p>""")
+
 
 class WidgetRenderingTestWithTemplateStringIfInvalidSet(WidgetRenderingTest):
-    def setUp(self):
-        super(WidgetRenderingTestWithTemplateStringIfInvalidSet, self).setUp()
-        self.original_TEMPLATE_STRING_IF_INVALID = settings.TEMPLATE_STRING_IF_INVALID
-        settings.TEMPLATE_STRING_IF_INVALID = InvalidVariable(u'INVALID')
+    pass
 
-    def tearDown(self):
-        super(WidgetRenderingTestWithTemplateStringIfInvalidSet, self).tearDown()
-        settings.TEMPLATE_STRING_IF_INVALID = self.original_TEMPLATE_STRING_IF_INVALID
+WidgetRenderingTestWithTemplateStringIfInvalidSet = override_settings(TEMPLATE_STRING_IF_INVALID=InvalidVariable(u'INVALID'))(WidgetRenderingTestWithTemplateStringIfInvalidSet)
+
+
+class WidgetContextTests(TestCase):
+    def test_widget_render_method_should_not_clutter_the_context(self):
+        '''
+        Make sure that the widget rendering pops the context as often as it
+        pushed onto it. Otherwise this would lead to leaking variables into
+        outer scopes.
+
+        See issue #43 for more information.
+        '''
+        context = Context({
+            'one': 1,
+        })
+        context_levels = len(context.dicts)
+        widget = forms.TextInput()
+        widget.context_instance = context
+        widget.render('text', '')
+        self.assertEqual(len(context.dicts), context_levels)
+
+    def test_widget_should_not_clutter_the_context(self):
+        class TextForm(forms.Form):
+            text = forms.CharField(label='My text field')
+        context = Context({
+            'form': TextForm(),
+        })
+        context_levels = len(context.dicts)
+        rendered = Template('''
+            {% load floppyforms %}
+            {% form form using %}
+                {% formrow form.text with label="Textfield" %}
+                {% formrow form.text %}
+            {% endform %}
+        ''').render(context)
+        self.assertEqual(len(context.dicts), context_levels)
+        self.assertHTMLEqual(rendered, '''
+            <p>
+                <label for="id_text">Textfield:</label>
+                <input type="text" name="text" id="id_text" required />
+            </p>
+            <p>
+                <label for="id_text">My text field:</label>
+                <input type="text" name="text" id="id_text" required />
+            </p>
+        ''')

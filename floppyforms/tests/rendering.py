@@ -1,8 +1,9 @@
+from django.test import TestCase
+
 import floppyforms as forms
+
 from floppyforms import widgets
 from floppyforms.templatetags.floppyforms import ConfigFilter, FormConfig
-
-from .base import FloppyFormsTestCase
 
 
 class AgeField(forms.IntegerField):
@@ -18,7 +19,7 @@ class RegistrationForm(forms.Form):
     comment = forms.CharField(widget=widgets.Textarea)
 
 
-class FormConfigTests(FloppyFormsTestCase):
+class FormConfigTests(TestCase):
     def test_default_retrieve(self):
         """
         Test if FormConfig returns the correct default values if no
@@ -108,6 +109,58 @@ class FormConfigTests(FloppyFormsTestCase):
         # config applies to ``short_biography``
         widget = config.retrieve('widget', bound_field=form['short_biography'])
         self.assertEqual(widget.__class__, widgets.HiddenInput)
+
+    def test_filter_for_field_class_name(self):
+        form = RegistrationForm()
+
+        config = FormConfig()
+        config.configure('widget', widgets.TextInput(), filter=ConfigFilter('CharField'))
+
+        widget = config.retrieve('widget', bound_field=form['comment'])
+        self.assertEqual(widget.__class__, widgets.TextInput)
+
+        widget = config.retrieve('widget', bound_field=form['name'])
+        self.assertEqual(widget.__class__, widgets.TextInput)
+
+    def test_filter_for_widget_class_name(self):
+        form = RegistrationForm()
+
+        config = FormConfig()
+        config.configure('widget', widgets.TextInput(), filter=ConfigFilter('Textarea'))
+
+        widget = config.retrieve('widget', bound_field=form['comment'])
+        self.assertEqual(widget.__class__, widgets.TextInput)
+
+        widget = config.retrieve('widget', bound_field=form['name'])
+        self.assertEqual(widget.__class__, widgets.TextInput)
+
+        # swap widgets TextInput <> Textarea
+
+        config = FormConfig()
+        config.configure('widget', widgets.Textarea(), filter=ConfigFilter('TextInput'))
+        config.configure('widget', widgets.TextInput(), filter=ConfigFilter('Textarea'))
+
+        widget = config.retrieve('widget', bound_field=form['comment'])
+        self.assertEqual(widget.__class__, widgets.TextInput)
+
+        widget = config.retrieve('widget', bound_field=form['name'])
+        self.assertEqual(widget.__class__, widgets.Textarea)
+
+    def test_filter_for_name_object(self):
+        form = RegistrationForm()
+
+        config = FormConfig()
+        config.configure('widget', widgets.Textarea(), filter=ConfigFilter('object'))
+
+        widget = config.retrieve('widget', bound_field=form['email'])
+        self.assertEqual(widget.__class__, widgets.EmailInput)
+
+        widget = config.retrieve('widget', bound_field=form['name'])
+        self.assertEqual(widget.__class__, widgets.TextInput)
+
+        widget = config.retrieve('widget', bound_field=form['comment'])
+        self.assertEqual(widget.__class__, widgets.Textarea)
+
 
     def test_stacked_config(self):
         form = RegistrationForm()

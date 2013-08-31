@@ -28,10 +28,19 @@ The source code is hosted on `github`_.
 Installation
 ------------
 
-Django 1.3 or greater is required. Two-step process to install
-django-floppyforms:
+Depending on your Django and python versions, you might want to install a
+specific version of django-floppyforms instead of the latest and greatest.
 
-* ``pip install -U django-floppyforms``
+=================== ====================== ===============
+Floppyforms version Minimal Django version Python versions
+=================== ====================== ===============
+1.0                 1.3                    2.5 - 2.7
+1.1                 1.4.2                  2.6, 2.7, 3.3
+=================== ====================== ===============
+
+Two-step process to install django-floppyforms:
+
+* ``pip install django-floppyforms==<version_number>``
 * Add ``'floppyforms'`` to your ``INSTALLED_APPS``
 
 When you're done you can jump to the :doc:`usage <usage>` section. For the
@@ -49,6 +58,7 @@ impatient reader, there's also an :doc:`examples <examples>` section.
    templatetags
    differences
    examples
+   bootstrap
 
 Additional notes
 ----------------
@@ -61,11 +71,39 @@ Feel free to join the ``#django-floppyforms`` IRC channel on freenode.
 Changelog
 `````````
 
-* **v1.0.1**:
+* **v1.1**:
+
+  * Added GenericIPAddressField.
+
+  * Django 1.5 and Python 3.3 support added.
+
+  * Django 1.3 support dropped.
+
+  * GIS widgets switched to stable OpenLayers release instead of a dev build.
 
   * Fixed ``Textarea`` widget template to work with a non-empty
     ``TEMPLATE_STRING_IF_INVALID`` setting. Thanks to Leon Matthews for the
     report.
+
+  * Fixed context handling in widget rendering. It didn't take care of popping
+    the context as often as it was pushed onto. This could cause strange
+    behaviour in the template by leaking variables into outer scopes. Thanks to
+    David Danier for the report.
+
+  * Added missing empty choice for selectboxes in ``SelectDateWidget``. Thanks
+    fsx999 for the report.
+
+  * ``IntegerField`` now automatically passes its ``min_value`` and
+    ``max_value`` (if provided) to the ``NumberInput`` widget.
+
+  * Added basic support for ``<datalist>`` elements for suggestions in
+    ``Input`` widgets.
+
+  * ``date``, ``datetime`` and ``time`` inputs are not localized anymore. The
+    HTML5 spec requires the rendered values to be RFC3339-compliant and the
+    browsers are in charge of localization. If you still want localized
+    date/time inputs, use those provided by Django or override the
+    ``_format_value()`` method of the relevant widgets.
 
 * **v1.0**:
 

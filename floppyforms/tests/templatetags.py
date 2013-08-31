@@ -1,12 +1,12 @@
 from django.forms import TextInput
 from django.forms.formsets import formset_factory
 from django.template import Context, Template, TemplateSyntaxError
+from django.test import TestCase
 
 import floppyforms as forms
 from floppyforms.templatetags.floppyforms import (FormConfig, ConfigFilter,
                                                   FormNode, RowModifier,
                                                   FieldModifier)
-from .base import FloppyFormsTestCase
 
 
 def render(template, context=None, config=None):
@@ -40,6 +40,7 @@ class PersonForm(forms.Form):
     firstname = forms.CharField()
     lastname = forms.CharField()
     age = forms.IntegerField()
+    bio = forms.CharField(widget=forms.Textarea)
 
 
 class HardcodedWidget(forms.Widget):
@@ -51,7 +52,7 @@ class HardcodedForm(forms.Form):
     name = forms.CharField(widget=HardcodedWidget())
 
 
-class FormConfigNodeTests(FloppyFormsTestCase):
+class FormConfigNodeTests(TestCase):
     def test_enforce_form_tag(self):
         render('{% form myform using %}{% formconfig row using "my_row_template.html" %}{% endform %}')
         with self.assertRaises(TemplateSyntaxError):
@@ -189,6 +190,9 @@ class FormConfigNodeTests(FloppyFormsTestCase):
         self.assertEqual(
             config.retrieve('widget_template', bound_field=form['age']),
             'floppyforms/input.html')
+        self.assertEqual(
+            config.retrieve('widget_template', bound_field=form['bio']),
+            'floppyforms/textarea.html')
 
     def test_field_config_for_field_name(self):
         form = PersonForm()
@@ -206,6 +210,9 @@ class FormConfigNodeTests(FloppyFormsTestCase):
         self.assertEqual(
             config.retrieve('widget_template', bound_field=form['age']),
             'floppyforms/input.html')
+        self.assertEqual(
+            config.retrieve('widget_template', bound_field=form['bio']),
+            'floppyforms/textarea.html')
 
     def test_field_config_for_field_type(self):
         form = PersonForm()
@@ -223,9 +230,32 @@ class FormConfigNodeTests(FloppyFormsTestCase):
         self.assertEqual(
             config.retrieve('widget_template', bound_field=form['age']),
             'field.html')
+        self.assertEqual(
+            config.retrieve('widget_template', bound_field=form['bio']),
+            'floppyforms/textarea.html')
+
+    def test_field_config_for_widget_type(self):
+        form = PersonForm()
+        context = Context({FormNode.IN_FORM_CONTEXT_VAR: True, 'form': form})
+
+        node = compile_to_nodelist('{% formconfig field using "field.html" for "Textarea" %}')
+        node.render(context)
+        config = node.get_config(context)
+        self.assertEqual(
+            config.retrieve('widget_template', bound_field=form['firstname']),
+            'floppyforms/input.html')
+        self.assertEqual(
+            config.retrieve('widget_template', bound_field=form['lastname']),
+            'floppyforms/input.html')
+        self.assertEqual(
+            config.retrieve('widget_template', bound_field=form['age']),
+            'floppyforms/input.html')
+        self.assertEqual(
+            config.retrieve('widget_template', bound_field=form['bio']),
+            'field.html')
 
 
-class FormTagTests(FloppyFormsTestCase):
+class FormTagTests(TestCase):
     def test_valid_syntax(self):
         render('{% form myform %}')
         render('{% form myform using "myform_layout.html" %}')
@@ -310,7 +340,7 @@ class FormTagTests(FloppyFormsTestCase):
                     'myform': PersonForm(),
                 }), """
                 Forms: 1
-                1. Form Fields: firstname lastname age
+                1. Form Fields: firstname lastname age bio
                 """)
         with self.assertTemplateUsed('simple_form_tag.html'):
             self.assertHTMLEqual(
@@ -320,7 +350,7 @@ class FormTagTests(FloppyFormsTestCase):
                 }), """
                 Forms: 2
                 1. Form Fields: name
-                2. Form Fields: firstname lastname age
+                2. Form Fields: firstname lastname age bio
                 """)
 
     def test_include_content_with_extra_arguments(self):
@@ -330,7 +360,7 @@ class FormTagTests(FloppyFormsTestCase):
                     'myform': PersonForm(),
                 }), """
                 Forms: 1
-                1. Form Fields: firstname lastname age
+                1. Form Fields: firstname lastname age bio
                 Extra argument: spam
                 """)
         with self.assertTemplateUsed('simple_form_tag.html'):
@@ -339,7 +369,7 @@ class FormTagTests(FloppyFormsTestCase):
                     'myform': PersonForm(),
                 }), """
                 Forms: 1
-                1. Form Fields: firstname lastname age
+                1. Form Fields: firstname lastname age bio
                 """)
         with self.assertTemplateUsed('simple_form_tag.html'):
             self.assertHTMLEqual(
@@ -350,7 +380,7 @@ class FormTagTests(FloppyFormsTestCase):
                     """, {'myform': PersonForm()}),
                 """
                 Forms: 1
-                1. Form Fields: firstname lastname age
+                1. Form Fields: firstname lastname age bio
                 Extra argument: ham
                 """)
         with self.assertTemplateUsed('simple_form_tag.html'):
@@ -362,7 +392,7 @@ class FormTagTests(FloppyFormsTestCase):
                     """, {'myform': PersonForm()}),
                 """
                 Forms: 1
-                1. Form Fields: firstname lastname age
+                1. Form Fields: firstname lastname age bio
                 """)
         with self.assertTemplateUsed('simple_form_tag.html'):
             self.assertHTMLEqual(
@@ -373,7 +403,7 @@ class FormTagTests(FloppyFormsTestCase):
                     """, {'myform': PersonForm()}),
                 """
                 Forms: 1
-                1. Form Fields: firstname lastname age
+                1. Form Fields: firstname lastname age bio
                 """)
 
     def test_default_template(self):
@@ -389,7 +419,7 @@ class FormTagTests(FloppyFormsTestCase):
                 'forms': form_list,
             }), """
             Forms: 3
-            1. Form Fields: firstname lastname age
+            1. Form Fields: firstname lastname age bio
             2. Form Fields: name
             3. Form Fields: name
             """)
@@ -402,9 +432,9 @@ class FormTagTests(FloppyFormsTestCase):
                 'formset': formset,
             }), """
             Forms: 3
-            1. Form Fields: firstname lastname age
-            2. Form Fields: firstname lastname age
-            3. Form Fields: firstname lastname age
+            1. Form Fields: firstname lastname age bio
+            2. Form Fields: firstname lastname age bio
+            3. Form Fields: firstname lastname age bio
             """)
 
         formset = PersonFormSet(initial=[{}, {}])
@@ -413,15 +443,38 @@ class FormTagTests(FloppyFormsTestCase):
                 'formset': formset,
             }), """
             Forms: 5
-            1. Form Fields: firstname lastname age
-            2. Form Fields: firstname lastname age
-            3. Form Fields: firstname lastname age
-            4. Form Fields: firstname lastname age
-            5. Form Fields: firstname lastname age
+            1. Form Fields: firstname lastname age bio
+            2. Form Fields: firstname lastname age bio
+            3. Form Fields: firstname lastname age bio
+            4. Form Fields: firstname lastname age bio
+            5. Form Fields: firstname lastname age bio
             """)
 
+    def test_formconfig_gets_popped_after_form_tag(self):
+        form = PersonForm()
+        rendered = render('''{% form form using %}
+            {% formconfig row with extra_argument="first argument" %}
+            {% formrow form.firstname using "simple_formrow_tag.html" %}
+            {% form form using %}
+                {% formconfig row with extra_argument="pop me" %}
+                {% formrow form.lastname using "simple_formrow_tag.html" %}
+                {% formrow argument|if:forloop.last|else:None %}
+            {% endform %}
+            {% formrow form.lastname using "simple_formrow_tag.html" %}
+        {% endform %}''', {'form': form})
+        self.assertHTMLEqual(rendered, '''
+        Fields: 1
+        1. Field: firstname Extra argument: first argument
 
-class FormRowTagTests(FloppyFormsTestCase):
+        Fields: 1
+        1. Field: lastname Extra argument: pop me
+
+        Fields: 1
+        1. Field: lastname Extra argument: first argument
+        ''')
+
+
+class FormRowTagTests(TestCase):
     def test_valid_syntax(self):
         render('{% formrow myform.field %}')
         render('{% formrow myform.field using "myrow_layout.html" %}')
@@ -559,26 +612,49 @@ class FormRowTagTests(FloppyFormsTestCase):
         self.assertHTMLEqual(render("""{% form myform using %}
             {% formrow form using "simple_formrow_tag.html" %}
         {% endform %}""", {'myform': form}), """
-            Fields: 3
+            Fields: 4
             1. Field: firstname
             2. Field: lastname
             3. Field: age
+            4. Field: bio
         """)
 
         form = PersonForm()
         self.assertHTMLEqual(render("""{% form myform using %}
             {% formrow form.lastname form None form.firstname using "simple_formrow_tag.html" %}
         {% endform %}""", {'myform': form}), """
-            Fields: 5
+            Fields: 6
             1. Field: lastname
             2. Field: firstname
             3. Field: lastname
             4. Field: age
-            5. Field: firstname
+            5. Field: bio
+            6. Field: firstname
         """)
 
+    def test_formconfig_gets_popped_after_formrow_tag(self):
+        '''
+        Tests that the form config will be reseted after being set in a
+        ``formrow`` tag.
+        '''
+        form = SimpleForm()
+        rendered = render('''{% form form using %}
+            {% formconfig row with extra_argument="first argument" %}
+            {% formrow form.name using "simple_formrow_tag_with_config.html" %}
+            {% formrow form.name using "simple_formrow_tag.html" %}
+        {% endform %}''', {'form': form})
+        self.assertHTMLEqual(rendered, '''
+        Fields: 1
+        1. Field: name argument: defined inline
+        Extra argument: first argument
 
-class FormFieldTagTests(FloppyFormsTestCase):
+        Fields: 1
+        1. Field: name
+        Extra argument: first argument
+        ''')
+
+
+class FormFieldTagTests(TestCase):
     def test_valid_syntax(self):
         render('{% formfield myform.name %}')
 
@@ -654,8 +730,24 @@ class FormFieldTagTests(FloppyFormsTestCase):
             {% formfield form.name %}
         {% endform %}""", {'myform': form}), """Hardcoded widget.""")
 
+    def test_formconfig_gets_popped_after_formfield_tag(self):
+        '''
+        Tests that the form config will be reseted after being set in a
+        ``formfield`` tag.
+        '''
+        form = SimpleForm()
+        rendered = render('''{% form form using %}
+            {% formconfig field with extra_argument="first argument" %}
+            {% formfield form.name using "extra_argument_with_config.html" with prefix="1." %}
+            {% formfield form.name using "extra_argument.html" with prefix="2." %}
+        {% endform %}''', {'form': form})
+        self.assertHTMLEqual(rendered, '''
+        1. argument: first argument
+        2. argument: first argument
+        ''')
 
-class WidgetTagTest(FloppyFormsTestCase):
+
+class WidgetTagTest(TestCase):
     def test_widget_tag(self):
         class MediaWidget(forms.TextInput):
             template_name = 'media_widget.html'

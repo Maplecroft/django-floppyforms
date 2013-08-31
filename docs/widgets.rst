@@ -37,6 +37,7 @@ URLField                 URLInput            <input type="url">
 SlugField                SlugInput           <input pattern="[-\\w]+">
 RegexField               TextInput           <input [pattern=...]>
 IPAddressField           IPAddressInput      <input pattern=...>
+GenericIPAddressField    TextInput
 MultiValueField          None (*abstract*)
 SplitDateTimeField       SplitDateTimeWidget
 ======================== =================== ========================
@@ -88,8 +89,11 @@ Some HTML5 widgets are also provided, although browser support may not be
 there yet:
 
 * ``SearchInput``: a widget that renders ``<input type="search">``.
-* ``ColorInput``: ``<input type="color">`` (not implemented in any browser
-  yet).
+* ``ColorInput``: ``<input type="color">`` (currently only supported by Chrome 20+ and Opera 11+).
 * ``RangeInput``: ``<input type="range">``, for sliders instead of spinboxes
   for numbers.
 * ``PhoneNumberInput``: ``<input type="tel">``. For phone numbers.
+
+You can easily check browser support for the various (HTML5) input types on caniuse.com_.
+
+.. _caniuse.com: http://caniuse.com/#search=input

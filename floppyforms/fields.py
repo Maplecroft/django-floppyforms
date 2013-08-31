@@ -1,32 +1,25 @@
 from django import forms
-from django.utils.translation import ugettext_lazy as _
 
 from .widgets import (TextInput, HiddenInput, CheckboxInput, Select,
                       ClearableFileInput, SelectMultiple, DateInput,
                       DateTimeInput, TimeInput, URLInput, NumberInput,
                       EmailInput, NullBooleanSelect, SlugInput, IPAddressInput,
-                      SplitDateTimeWidget, SplitHiddenDateTimeWidget,
-                      FILE_INPUT_CONTRADICTION)
+                      SplitDateTimeWidget, SplitHiddenDateTimeWidget)
 
 __all__ = (
     'Field', 'CharField', 'IntegerField', 'DateField', 'TimeField',
     'DateTimeField', 'EmailField', 'FileField', 'ImageField', 'URLField',
     'BooleanField', 'NullBooleanField', 'ChoiceField', 'MultipleChoiceField',
     'FloatField', 'DecimalField', 'SlugField', 'RegexField', 'IPAddressField',
-    'TypedChoiceField', 'FilePathField', 'TypedMultipleChoiceField',
-    'ComboField', 'MultiValueField', 'SplitDateTimeField',
+    'GenericIPAddressField', 'TypedChoiceField', 'FilePathField',
+    'TypedMultipleChoiceField', 'ComboField', 'MultiValueField',
+    'SplitDateTimeField',
 )
 
 
 class Field(forms.Field):
     widget = TextInput
     hidden_widget = HiddenInput
-
-    def __init__(self, *args, **kwargs):
-        super(Field, self).__init__(*args, **kwargs)
-        self.widget.is_required = self.required  # fallback to support
-                                                 # is_required with
-                                                 # Django < 1.3
 
 
 class CharField(Field, forms.CharField):
@@ -64,29 +57,6 @@ class FilePathField(ChoiceField, forms.FilePathField):
 
 class FileField(Field, forms.FileField):
     widget = ClearableFileInput
-    default_error_messages = {
-        'invalid': _(u"No file was submitted. Check the encoding type on the form."),
-        'missing': _(u"No file was submitted."),
-        'empty': _(u"The submitted file is empty."),
-        'max_length': _(u'Ensure this filename has at most %(max)d characters (it has %(length)d).'),
-        'contradiction': _(u'Please either submit a file or check the clear checkbox, not both.')
-    }
-
-    def __init__(self, *args, **kwargs):
-        self.max_length = kwargs.pop('max_length', None)
-        self.allow_empty_file = kwargs.pop('allow_empty_file', False)
-        super(FileField, self).__init__(*args, **kwargs)
-
-    def clean(self, data, initial=None):
-        if data is FILE_INPUT_CONTRADICTION:
-            raise forms.ValidationError(self.error_messages['contradiction'])
-        if data is False:
-            if not self.required:
-                return False
-            data = None
-        if not data and initial:
-            return initial
-        return super(FileField, self).clean(data)
 
 
 class ImageField(Field, forms.ImageField):
@@ -125,6 +95,14 @@ class FloatField(Field, forms.FloatField):
 class IntegerField(Field, forms.IntegerField):
     widget = NumberInput
 
+    def widget_attrs(self, widget):
+        attrs = super(IntegerField, self).widget_attrs(widget) or {}
+        if self.min_value is not None:
+            attrs['min'] = self.min_value
+        if self.max_value is not None:
+            attrs['max'] = self.max_value
+        return attrs
+
 
 class EmailField(Field, forms.EmailField):
     widget = EmailInput
@@ -156,6 +134,10 @@ class RegexField(Field, forms.RegexField):
 
 class IPAddressField(Field, forms.IPAddressField):
     widget = IPAddressInput
+
+
+class GenericIPAddressField(Field, forms.GenericIPAddressField):
+    pass
 
 
 class ComboField(Field, forms.ComboField):
