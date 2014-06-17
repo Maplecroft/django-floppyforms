@@ -310,12 +310,12 @@ class ModifierBase(BaseFormNode):
         filter = None
         if self.options['for']:
             try:
-                var = self.options['for'].resolve(context)
+                for_ = self.options['for'].resolve(context)
             except VariableDoesNotExist:
                 if settings.TEMPLATE_DEBUG:
                     raise
                 return ''
-            filter = ConfigFilter(var)
+            filter = ConfigFilter(for_)
         if self.options['using']:
             try:
                 template_name = self.options['using'].resolve(context)
@@ -505,13 +505,10 @@ class FormNode(BaseFormRenderNode):
         config = self.get_config(context)
         return config.retrieve('layout')
 
-    def render(self, context):
-        context.push()
-        try:
-            context[self.IN_FORM_CONTEXT_VAR] = True
-            return super(FormNode, self).render(context)
-        finally:
-            context.pop()
+    def get_extra_context(self, context):
+        extra_context = super(FormNode, self).get_extra_context(context)
+        extra_context[self.IN_FORM_CONTEXT_VAR] = True
+        return extra_context
 
     @classmethod
     def parse_using(cls, tagname, parser, bits, options):

@@ -3,7 +3,7 @@ GeoDjango widgets
 
 .. image:: images/geomcollection.png
 
-Django-floppyforms provides fields and rich widgets for easy manipulation of
+django-floppyforms provides fields and rich widgets for easy manipulation of
 GEOS geometry fields. All geometry types are supported thanks to OpenLayers
 and a custom WKT parser/serializer implementing some Django-specific tweaks.
 
@@ -39,7 +39,7 @@ your project.
 Widget types
 ------------
 
-Django-floppyforms provides **base widgets** and **geometry-specific
+django-floppyforms provides **base widgets** and **geometry-specific
 widgets**:
 
 * **base widgets** are in charge of rendering a map from a specific map
@@ -373,7 +373,7 @@ If you need a custom base widget, it is important to inherit from
 widget, you may end up with conflicting media files. ``BaseGeometryWidget``
 doesn't specify any javascript file so get more control by subclassing it.
 
-.. _contribute them back!: https://github.com/brutasse/django-floppyforms
+.. _contribute them back!: https://github.com/gregmuellegger/django-floppyforms
 
 Examples
 --------

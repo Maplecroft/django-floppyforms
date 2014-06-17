@@ -4,6 +4,7 @@ import os
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import models
 from django.template import Context, Template
+from django.template.loader import render_to_string
 from django.test import TestCase
 from django.test.utils import override_settings
 from django.utils.dates import MONTHS
@@ -825,7 +826,7 @@ class WidgetRenderingTest(TestCase):
 
     def test_file_path_field(self):
         """foo = forms.FilePathField()"""
-        parent = os.path.join(os.path.dirname(__file__), '..')
+        parent = os.path.dirname(os.path.abspath(__file__))
 
         class PathForm(forms.Form):
             path = forms.FilePathField(path=parent, recursive=True)
@@ -1169,6 +1170,31 @@ class WidgetRenderingTest(TestCase):
             </datalist>
         </p>""")
 
+    def test_specify_template_at_init(self):
+        """Can customize the template used when instantiating the widget."""
+        widget = forms.TextInput(template_name='custom.html')
+
+        rendered = widget.render('text', 'value')
+        self.assertHTMLEqual(rendered, '<input type="custom" name="text" />')
+
+    def test_specify_template_at_init_as_None(self):
+        """Can give an explicit template_name=None without overriding."""
+        widget = forms.TextInput(template_name=None)
+
+        self.assertIsNot(widget.template_name, None)
+
+    def test_specify_template_in_render(self):
+        """Can customize the template used at render time."""
+        widget = forms.TextInput()
+
+        rendered = widget.render('text', 'value', template_name='custom.html')
+        self.assertHTMLEqual(rendered, '<input type="custom" name="text" />')
+
+        # Can explicitly give None and will not override
+        rendered = widget.render('text', 'value', template_name=None)
+        self.assertHTMLEqual(
+            rendered, '<input type="text" name="text" value="value" />')
+
 
 class WidgetRenderingTestWithTemplateStringIfInvalidSet(WidgetRenderingTest):
     pass
@@ -1219,3 +1245,64 @@ class WidgetContextTests(TestCase):
                 <input type="text" name="text" id="id_text" required />
             </p>
         ''')
+
+
+class AttrsTemplateTests(TestCase):
+    def render_attrs(self, attrs):
+        return render_to_string('floppyforms/attrs.html', {
+            'attrs': attrs,
+        })
+
+    def test_attrs_with_one_item(self):
+        rendered = self.render_attrs({
+            'name': 'fieldname'
+        })
+        self.assertEqual(rendered, ' name="fieldname"')
+
+    def test_attrs_with_value_is_true(self):
+        rendered = self.render_attrs({
+            'required': True
+        })
+        self.assertEqual(rendered, ' required')
+
+    def test_attrs_with_value_is_one(self):
+        '''
+        Regression test for #88.
+        '''
+        rendered = self.render_attrs({
+            'value': True
+        })
+        self.assertEqual(rendered, ' value')
+        rendered = self.render_attrs({
+            'value': 1
+        })
+        self.assertEqual(rendered, ' value="1"')
+        rendered = self.render_attrs({
+            'value': False
+        })
+        self.assertEqual(rendered, ' value="False"')
+
+    def test_attrs_with_multiple_values(self):
+        rendered = self.render_attrs({
+            'required': True,
+            'format': 'dd.mm.yyyy',
+        })
+        # We cannot predict the ordering...
+        self.assertTrue(rendered in [
+            ' required format="dd.mm.yyyy"',
+            ' format="dd.mm.yyyy" required',
+        ])
+
+        rendered = self.render_attrs({
+            'value': 'Hello World',
+            'id': 'id_name',
+            'name': 'name',
+            'disabled': True,
+        })
+        self.assertTrue(' value="Hello World"' in rendered)
+        self.assertTrue(' id="id_name"' in rendered)
+        self.assertTrue(' name="name"' in rendered)
+
+        # disabled shouldn't have a value
+        self.assertTrue(' disabled' in rendered)
+        self.assertTrue(' disabled=' not in rendered)

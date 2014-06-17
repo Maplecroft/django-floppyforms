@@ -1,3 +1,4 @@
+import django
 from django.forms import TextInput
 from django.forms.formsets import formset_factory
 from django.template import Context, Template, TemplateSyntaxError
@@ -9,6 +10,12 @@ from floppyforms.templatetags.floppyforms import (FormConfig, ConfigFilter,
                                                   FieldModifier)
 
 
+_TEMPLATE_PREAMBLE = '{% load floppyforms %}'
+if django.VERSION >= (1, 6):
+    _TEMPLATE_PREAMBLE += '{% load firstof from future %}'
+    _TEMPLATE_PREAMBLE += '{% load cycle from future %}'
+
+
 def render(template, context=None, config=None):
     if context is None:
         context = {}
@@ -16,7 +23,7 @@ def render(template, context=None, config=None):
         context = Context(context)
     if config is not None:
         setattr(context, FormNode.CONFIG_CONTEXT_ATTR, config)
-    t = Template('{% load floppyforms %}' + template)
+    t = Template(_TEMPLATE_PREAMBLE + template)
     return t.render(context)
 
 
@@ -329,7 +336,7 @@ class FormTagTests(TestCase):
                 {% endif %}
                 Length: {{ forms|length }}
             {% endform %}""", {
-                'f1': SimpleForm(),
+                'f1': SimpleForm(),  # noqa
                 'f2': SimpleForm()
             }), 'Equals! Length: 2')
 
@@ -471,6 +478,14 @@ class FormTagTests(TestCase):
 
         Fields: 1
         1. Field: lastname Extra argument: first argument
+        ''')
+
+    def test_formconfig_inside_only(self):
+        form = PersonForm()
+        rendered = render('''{% form form using "formconfig_inside_only.html" with form=form only  %}''', {'form': form})
+        self.assertHTMLEqual(rendered, '''
+        Fields: 1
+        1. Field: firstname Extra argument: first argument
         ''')
 
 

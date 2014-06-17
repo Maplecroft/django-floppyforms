@@ -21,15 +21,15 @@ to:
     Other modules contained by ``django.forms``, such as ``forms``, ``utils``
     and ``formsets`` have not been aliased.
 
-Standard forms
---------------
+HTML 5 forms!
+-------------
 
-Floppyforms adds a couple of things on top of the standard Django widgets:
-HTML syntax, more native widget types, the ``required`` attribute and
+Floppyforms adds a couple of HTML 5 features on top of the standard Django
+widgets: HTML syntax, more native widget types, the ``required`` attribute and
 client-side validation.
 
-HTML syntax
-```````````
+HTML syntax instead of XHTML
+````````````````````````````
 
 Floppyforms uses an HTML syntax instead of Django's XHTML syntax. You will see
 ``<input type="text" ... >`` and not ``<input type="text" />``.
@@ -69,49 +69,49 @@ Client-side validation
 ``````````````````````
 
 Like with the ``required`` attribute, the ``pattern`` attribute is especially
-interesting for slightly more complex client-side validation. The SlugField
-and the IPAddressField both have a pattern attached to the ``<input>``.
+interesting for slightly more complex client-side validation. The ``SlugField``
+and the ``IPAddressField`` both have a pattern attached to the ``<input>``.
+
+However having these validations backed directly into the HTML and therefore
+allowing the browser to validate the user input might not always what you want
+to have. Sometimes you just want to have a form where it should be allowed to
+submit invalid data. In that case you can use the ``novalidate`` attribute on
+the ``<form>`` HTML tag or the ``formnovalidate`` attribute on the submit
+button:
+
+.. code-block:: html
+
+    <form action="" novalidate>
+        This input will not be validated:
+        <input type="text" required />
+    </form>
+
+    <form action="">
+        Another way to not validate the form in the browser is using the
+        formnovalidate attribute on the submit button:
+        <input type="submit" value="cancel" formnovalidate>
+    </form>
+
+Read the corresponding documentation for `novalidate`_ and `formnovalidate`_ on
+the Mozilla Developer Network if you want to know more.
+
+.. _novalidate: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/form#attr-novalidate
+.. _formnovalidate: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/button#attr-formnovalidate
 
 ModelForms
 ----------
 
-As for ModelForms, all the fields coming from the model still get a widget
-from ``django.forms`` and not from floppyforms, unless the widgets are
-overridden in the form's ``Meta`` inner class. For example, if we have a
-model declared as such:
+Prior to version 1.2 of django-floppyforms, you had to take some manual
+efforts to make your modelforms work with floppyforms. This is now done
+seemlesly, but since this was introduced a backwards incompatible change, it
+was necessary to provde a deprecation path.
 
-.. code-block:: python
+So if you start out new with django-floppyforms just use ``import
+floppyforms.__future__ as forms`` as your import instead of ``import
+floppyforms as forms`` when you want to define modelforms.
 
-    from django.db import models
-
-    class Hi(models.Model):
-        name = models.CharField(max_length=255)
-        timestamp = models.DateTimeField()
-        rank = models.PositiveIntegerField()
-
-And a ModelForm written like this:
-
-.. code-block:: python
-
-    import floppyforms as forms
-
-    class HiForm(forms.ModelForm):
-        yesno = forms.BooleanField
-
-        class Meta:
-            model = Hi
-            widgets = {
-                'timestamp': forms.DateTimeInput,
-            }
-
-With such a ModelForm, the ``yesno`` and ``timestamp`` fields will get a
-widget from floppyforms:
-
-* ``yesno`` is an extra field declared using the floppyforms namespace
-* ``timestamp`` has an overridden widget coming from floppyforms as well
-
-However, the ``name`` and ``rank`` field will both get a widget from
-``django.forms``, in this case a ``TextInput``.
+For more information see the :ref:`section about modelforms in the usage
+documentation <usage-modelforms>`.
 
 ``TEMPLATE_STRING_IF_INVALID`` caveats
 --------------------------------------
@@ -122,7 +122,7 @@ handled`__ for more details).
 
 __ https://docs.djangoproject.com/en/dev/ref/templates/api/#invalid-template-variables
 
-Django-floppyforms assumes in its predefined form layouts that
+django-floppyforms assumes in its predefined form layouts that
 all filters are applied. You can work around this by making your
 ``TEMPLATE_STRING_IF_INVALID`` evaluate to ``False`` but still keep its
 string representation. Here is an example how you could achieve this in your
@@ -160,11 +160,3 @@ If you need to get the same output as standard Django forms:
 
       class Foo(forms.Form):
           url = forms.URLField(widget=forms.TextInput)
-
-
-.. note:: On overriding the default templates
-
-    If you override floppyforms' templates in your project-level template
-    directory, the floppyforms tests will start failing. You might want to
-    define new widgets that extends floppyforms widgets using their own
-    templates to avoid this issue.

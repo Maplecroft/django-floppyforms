@@ -2,8 +2,13 @@ from itertools import chain
 import re
 import datetime
 
+import django
 from django import forms
-from django.forms.util import to_current_timezone
+try:
+    from django.forms.utils import to_current_timezone
+except ImportError:
+    # Fall back to old module name for Django <= 1.5
+    from django.forms.util import to_current_timezone
 from django.forms.widgets import FILE_INPUT_CONTRADICTION
 from django.conf import settings
 from django.template import loader
@@ -43,6 +48,9 @@ class Input(Widget):
         datalist = kwargs.pop('datalist', None)
         if datalist is not None:
             self.datalist = datalist
+        template_name = kwargs.pop('template_name', None)
+        if template_name is not None:
+            self.template_name = template_name
         super(Input, self).__init__(*args, **kwargs)
         self.context_instance = None
 
@@ -90,9 +98,12 @@ class Input(Widget):
         return context
 
     def render(self, name, value, attrs=None, **kwargs):
+        template_name = kwargs.pop('template_name', None)
+        if template_name is None:
+            template_name = self.template_name
         context = self.get_context(name, value, attrs=attrs or {}, **kwargs)
         return loader.render_to_string(
-            self.template_name,
+            template_name,
             dictionary=context,
             context_instance=self.context_instance)
 
@@ -100,8 +111,13 @@ class Input(Widget):
 class TextInput(Input):
     input_type = 'text'
 
+    def __init__(self, *args, **kwargs):
+        if kwargs.get('attrs', None) is not None:
+            self.input_type = kwargs['attrs'].pop('type', self.input_type)
+        super(TextInput, self).__init__(*args, **kwargs)
 
-class PasswordInput(Input):
+
+class PasswordInput(TextInput):
     input_type = 'password'
 
     def __init__(self, attrs=None, render_value=False):
@@ -180,10 +196,11 @@ class FileInput(Input):
     def value_from_datadict(self, data, files, name):
         return files.get(name, None)
 
-    def _has_changed(self, initial, data):
-        if data is None:
-            return False
-        return True
+    if django.VERSION < (1, 6):
+        def _has_changed(self, initial, data):
+            if data is None:
+                return False
+            return True
 
 
 class ClearableFileInput(FileInput):
@@ -255,15 +272,16 @@ class DateInput(Input):
             return value.strftime(self.format)
         return value
 
-    def _has_changed(self, initial, data):
-        try:
-            input_format = formats.get_format('DATE_INPUT_FORMATS')[0]
-            initial = datetime.datetime.strptime(initial, input_format).date()
-        except (TypeError, ValueError):
-            pass
-        return super(DateInput, self)._has_changed(
-            self._format_value(initial), data
-        )
+    if django.VERSION < (1, 6):
+        def _has_changed(self, initial, data):
+            try:
+                input_format = formats.get_format('DATE_INPUT_FORMATS')[0]
+                initial = datetime.datetime.strptime(initial, input_format).date()
+            except (TypeError, ValueError):
+                pass
+            return super(DateInput, self)._has_changed(
+                self._format_value(initial), data
+            )
 
 
 class DateTimeInput(Input):
@@ -284,15 +302,16 @@ class DateTimeInput(Input):
             return value.strftime(self.format)
         return value
 
-    def _has_changed(self, initial, data):
-        try:
-            input_format = formats.get_format('DATETIME_INPUT_FORMATS')[0]
-            initial = datetime.datetime.strptime(initial, input_format)
-        except (TypeError, ValueError):
-            pass
-        return super(DateTimeInput, self)._has_changed(
-            self._format_value(initial), data
-        )
+    if django.VERSION < (1, 6):
+        def _has_changed(self, initial, data):
+            try:
+                input_format = formats.get_format('DATETIME_INPUT_FORMATS')[0]
+                initial = datetime.datetime.strptime(initial, input_format)
+            except (TypeError, ValueError):
+                pass
+            return super(DateTimeInput, self)._has_changed(
+                self._format_value(initial), data
+            )
 
 
 class TimeInput(Input):
@@ -312,26 +331,27 @@ class TimeInput(Input):
             return value.strftime(self.format)
         return value
 
-    def _has_changed(self, initial, data):
-        try:
-            input_format = formats.get_format('TIME_INPUT_FORMATS')[0]
-            initial = datetime.datetime.strptime(initial, input_format).time()
-        except (TypeError, ValueError):
-            pass
-        return super(TimeInput, self)._has_changed(
-            self._format_value(initial), data
-        )
+    if django.VERSION < (1, 6):
+        def _has_changed(self, initial, data):
+            try:
+                input_format = formats.get_format('TIME_INPUT_FORMATS')[0]
+                initial = datetime.datetime.strptime(initial, input_format).time()
+            except (TypeError, ValueError):
+                pass
+            return super(TimeInput, self)._has_changed(
+                self._format_value(initial), data
+            )
 
 
 class SearchInput(Input):
     input_type = 'search'
 
 
-class EmailInput(Input):
+class EmailInput(TextInput):
     input_type = 'email'
 
 
-class URLInput(Input):
+class URLInput(TextInput):
     input_type = 'url'
 
 
@@ -339,7 +359,7 @@ class ColorInput(Input):
     input_type = 'color'
 
 
-class NumberInput(Input):
+class NumberInput(TextInput):
     input_type = 'number'
     min = None
     max = None
@@ -398,11 +418,12 @@ class CheckboxInput(Input, forms.CheckboxInput):
             value = values.get(value.lower(), value)
         return value
 
-    def _has_changed(self, initial, data):
-        if initial == 'False':
-            # show_hidden_initial may have transformed False to 'False'
-            initial = False
-        return bool(initial) != bool(data)
+    if django.VERSION < (1, 6):
+        def _has_changed(self, initial, data):
+            if initial == 'False':
+                # show_hidden_initial may have transformed False to 'False'
+                initial = False
+            return bool(initial) != bool(data)
 
 
 class Select(Input):
@@ -479,12 +500,13 @@ class NullBooleanSelect(Select):
                 'False': False,
                 False: False}.get(value, None)
 
-    def _has_changed(self, initial, data):
-        if initial is not None:
-            initial = bool(initial)
-        if data is not None:
-            data = bool(data)
-        return initial != data
+    if django.VERSION < (1, 6):
+        def _has_changed(self, initial, data):
+            if initial is not None:
+                initial = bool(initial)
+            if data is not None:
+                data = bool(data)
+            return initial != data
 
 
 class SelectMultiple(Select):
@@ -500,16 +522,17 @@ class SelectMultiple(Select):
             return data.getlist(name)
         return data.get(name, None)
 
-    def _has_changed(self, initial, data):
-        if initial is None:
-            initial = []
-        if data is None:
-            data = []
-        if len(initial) != len(data):
-            return True
-        initial_set = set([force_text(value) for value in initial])
-        data_set = set([force_text(value) for value in data])
-        return data_set != initial_set
+    if django.VERSION < (1, 6):
+        def _has_changed(self, initial, data):
+            if initial is None:
+                initial = []
+            if data is None:
+                data = []
+            if len(initial) != len(data):
+                return True
+            initial_set = set([force_text(value) for value in initial])
+            data_set = set([force_text(value) for value in data])
+            return data_set != initial_set
 
 
 class RadioSelect(Select):
