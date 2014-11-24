@@ -81,10 +81,8 @@
 
 <div style="float:left; margin-right:1em" id="{{ attrs.id }}_map"></div>
 <div style="float:left">
-<input class="{{ attrs.id }}_util search" id="g_places_search" placeholder="Google Places search..." style="margin-bottom:.5em" /><br />
-<!-- Find:<br /> -->
-<input class="{{ attrs.id }}_util search" id="{{ attrs.id }}_search" placeholder="GeoNames search..." /><br /> 
 <div id="{{ attrs.id }}_search_result_wrapper"><ul id="{{ attrs.id }}_search_result"></ul></div>
+<input class="{{ attrs.id }}_util search" id="{{ attrs.id }}_search" placeholder="GeoNames search..." /><br />
 <textarea name="{{ name }}"{% if required %} required{% endif %}{% include "floppyforms/attrs.html" %}>{{ value }}</textarea>
 </div>
 <div style="clear:both"> </div>
@@ -93,7 +91,11 @@
     {% block map_options %}var map_options = {};{% endblock %}
     {% block options %}var options = {
         geom_type: '{{ geom_type }}',
-        url: 'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        mapbox_token: '{{ mapbox_token }}',
+        sat_id: '{{ sat_id }}',
+        street_id: '{{ street_id }}',
+        map_ids: {{ map_ids|safe }},
+        primary_map: '{{ primary_map }}',
         id: '{{ attrs.id }}',
         is_collection: {{ is_collection|yesno:"true,false" }},
         is_linestring: {{ is_linestring|yesno:"true,false" }},

@@ -11,28 +11,30 @@ class LeafletWidget
     @searchBtn = @$("##{ @options.id }_searchBtn")
     @results = @$("##{ options.id }_search_result")
 
-    @searchURL = "http://ws.geonames.org/searchJSON?q={{LOCATION}}&maxRows=100"
+    @searchURL = "http://ws.geonames.net/searchJSON?q={{LOCATION}}&maxRows=100&username=maplecroft"
 
     @undo_geojson = []
     @redo_geojson = []
     @geojson = @getJSON()
 
-    osmUrl = @options.url
-    @osm = new L.TileLayer(osmUrl)
-    @ggl_sat = new L.Google('SATELLITE');
-    @ggl_road = new L.Google('ROADMAP');
-    @ggl_hy = new L.Google('HYBRID');
-    @map.addLayer(@ggl_hy)
+    L.mapbox.accessToken = @options.mapbox_token
+
     @map.options.minZoom = 1
     @map.options.maxZoom = 18
 
-    @map.addControl(new L.Control.Layers({
-        'Hybrid': this.ggl_hy,
-        'Street': this.ggl_road,
-        'Sat': this.ggl_sat,
-        'OSM': this.osm}, {}));
+    @map.addControl(L.mapbox.geocoderControl('mapbox.places-v1', {
+        autocomplete: true
+    }));
 
-    @map.setView(new L.LatLng(0, 0), 1)
+    # Extract map layers from list of two tuples then add primary map
+    @control_layer = {}
+    for name_id in @options.map_ids
+      this.control_layer[name_id[0]] = new L.mapbox.tileLayer('maplecroft.' + name_id[1])
+
+    @map.addLayer(this.control_layer[@options.primary_map])
+    @map.addControl(new L.Control.Layers(this.control_layer, {}));
+
+    @map.setView(new L.LatLng(0, 0), 2)
 
     @marker_group = new L.GeoJSON(@geojson)
     @map.addLayer(@marker_group)
@@ -48,23 +50,6 @@ class LeafletWidget
     @searchBtn.bind('click', @findLocations)
 
     @places_search_input = document.getElementById('g_places_search')
-    @autocomplete = new google.maps.places.Autocomplete(
-      @places_search_input, {}) #types: ['(regions)']})
-    google.maps.event.addListener(
-      @autocomplete, 'place_changed', @doPlaceChanged)
-
-    # This prevents any containing form from being submitted if the
-    # user hits enter having selected an autocompletion search choice.
-    google.maps.event.addDomListener(@places_search_input, 'keydown', (e) -> 
-      if e.keyCode == 13
-        if e.preventDefault
-          e.preventDefault()
-        else
-          # Since the google event handler framework does not handle 
-          # early IE versions, we have to do it by our self. :-( 
-          e.cancelBubble = true
-          e.returnValue = false
-    )
 
     ButtonsControl = L.Control.extend(
       options: position: 'bottomleft'
@@ -140,6 +125,7 @@ class LeafletWidget
       type: @options.geom_type
       coordinates: []
 
+
   refreshLayer: ->
     @textarea.val(JSON.stringify(@geojson))
     @marker_group.clearLayers()
@@ -204,7 +190,7 @@ class LeafletWidget
       item.click ->
         item = self.$(@)
         self.undo_geojson.push(self.getJSON())
-        self.geojson.coordinates.push([item.data('lng'), item.data('lat')])
+        self.geojson.coordinates.push([parseFloat(item.data('lng')), parseFloat(item.data('lat'))])
         self.showHideControls()  
         self.zoomToFit()
         self.refreshLayer()

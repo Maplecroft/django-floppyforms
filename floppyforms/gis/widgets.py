@@ -36,7 +36,7 @@ def _google_api_args():
 
     return m
 
-
+import json
 class BaseGeometryWidget(forms.Textarea):
     """
     The base class for rich geometry widgets. Custom widgets may be
@@ -55,13 +55,17 @@ class BaseGeometryWidget(forms.Textarea):
     is_collection = False
     geom_type = 'GEOMETRY'
 
+
     map_attrs = (
         'map_width', 'map_height', 'map_srid', 'display_wkt', 'as_geojson',
+        'mapbox_token', 'map_ids', 'primary_map'
     )
 
     def __init__(self, *args, **kwargs):
         super(BaseGeometryWidget, self).__init__(*args, **kwargs)
         attrs = kwargs.pop('attrs', {})
+        setattr(self, 'map_ids', getattr(self, 'map_ids', None))
+        # self.map_ids = json.dumps(self.map_ids)
         for key in self.map_attrs:
             setattr(self, key, attrs.pop(key, getattr(self, key, None)))
 
@@ -192,13 +196,11 @@ class BaseLeafletWidget(BaseGeometryWidget):
         js = (
             'http://cdn.leafletjs.com/leaflet-0.4/leaflet.js',
             'floppyforms/js/LeafletWidget.js',
-            'http://maps.googleapis.com/maps/api/js?%s' % urlencode(
-                _google_api_args()),
-            'floppyforms/js/Google.js',
+            'https://api.tiles.mapbox.com/mapbox.js/v2.1.2/mapbox.js'
         )
         css = ({
             'all': (
-                'http://cdn.leafletjs.com/leaflet-0.4/leaflet.css',
+                'https://api.tiles.mapbox.com/mapbox.js/v2.1.3/mapbox.css',
             )
         })
 
