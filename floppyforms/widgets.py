@@ -102,10 +102,7 @@ class Input(Widget):
         if template_name is None:
             template_name = self.template_name
         context = self.get_context(name, value, attrs=attrs or {}, **kwargs)
-        return loader.render_to_string(
-            template_name,
-            dictionary=context,
-            context_instance=self.context_instance)
+        return loader.render_to_string(template_name, context)
 
 
 class TextInput(Input):
