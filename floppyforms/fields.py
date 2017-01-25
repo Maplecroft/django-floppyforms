@@ -10,7 +10,7 @@ __all__ = (
     'Field', 'CharField', 'IntegerField', 'DateField', 'TimeField',
     'DateTimeField', 'EmailField', 'FileField', 'ImageField', 'URLField',
     'BooleanField', 'NullBooleanField', 'ChoiceField', 'MultipleChoiceField',
-    'FloatField', 'DecimalField', 'SlugField', 'RegexField', 'IPAddressField',
+    'FloatField', 'DecimalField', 'SlugField', 'RegexField',
     'GenericIPAddressField', 'TypedChoiceField', 'FilePathField',
     'TypedMultipleChoiceField', 'ComboField', 'MultiValueField',
     'SplitDateTimeField',
@@ -138,10 +138,6 @@ class RegexField(Field, forms.RegexField):
         if self.js_regex is not None:
             attrs['pattern'] = self.js_regex
         return attrs
-
-
-class IPAddressField(Field, forms.IPAddressField):
-    widget = IPAddressInput
 
 
 class GenericIPAddressField(Field, forms.GenericIPAddressField):

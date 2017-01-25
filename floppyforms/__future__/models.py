@@ -7,8 +7,7 @@ from django.forms.models import (ModelForm as _ModelForm,
                                  modelformset_factory as _modelformset_factory,
                                  inlineformset_factory as _inlineformset_factory,
                                  model_to_dict, fields_for_model, BaseModelForm,
-                                 save_instance, BaseModelFormSet,
-                                 BaseInlineFormSet)
+                                 BaseModelFormSet, BaseInlineFormSet)
 from django.utils import six
 
 from floppyforms import fields
@@ -19,7 +18,7 @@ from floppyforms.widgets import Textarea
 
 __all__ = (
     'ModelForm', 'BaseModelForm', 'model_to_dict', 'fields_for_model',
-    'save_instance', 'ModelChoiceField', 'ModelMultipleChoiceField',
+    'ModelChoiceField', 'ModelMultipleChoiceField',
     'BaseModelFormSet', 'modelformset_factory', 'BaseInlineFormSet',
     'inlineformset_factory',
 )

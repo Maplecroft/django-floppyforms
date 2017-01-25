@@ -1,7 +1,6 @@
 # flake8: noqa
 from django.forms import (BaseModelForm, model_to_dict, fields_for_model,
-                          save_instance, ValidationError, Media,
-                          MediaDefiningClass)
+                          ValidationError, Media, MediaDefiningClass)
 
 from .fields import *
 from .forms import *
@@ -15,4 +14,4 @@ except Exception:
     warnings.warn(
         "Unable to import floppyforms.gis, geometry widgets not available")
 
-__version__ = '1.5.0-mc'
+__version__ = '1.5.0-mc-1'

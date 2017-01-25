@@ -12,7 +12,7 @@ except ImportError:
 from django.forms.widgets import FILE_INPUT_CONTRADICTION
 from django.conf import settings
 from django.template import loader
-from django.utils.datastructures import MultiValueDict, MergeDict
+from django.utils.datastructures import MultiValueDict
 from django.utils.html import conditional_escape
 from django.utils.translation import ugettext_lazy as _
 from django.utils import datetime_safe, formats, six
@@ -158,7 +158,7 @@ class MultipleHiddenInput(HiddenInput):
         return "\n".join(inputs)
 
     def value_from_datadict(self, data, files, name):
-        if isinstance(data, (MultiValueDict, MergeDict)):
+        if isinstance(data, MultiValueDict):
             return data.getlist(name)
         return data.get(name, None)
 
@@ -518,7 +518,7 @@ class SelectMultiple(Select):
         return [force_text(v) for v in value]
 
     def value_from_datadict(self, data, files, name):
-        if isinstance(data, (MultiValueDict, MergeDict)):
+        if isinstance(data, MultiValueDict):
             return data.getlist(name)
         return data.get(name, None)
 
