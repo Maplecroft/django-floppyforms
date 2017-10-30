@@ -72,7 +72,7 @@
       this.map.addLayer(this.control_layer[this.options.primary_map]);
       this.map.addControl(new L.Control.Layers(this.control_layer, {}));
       this.map.setView(new L.LatLng(0, 0), 2);
-      if (this.geojson) {
+      if (this.geojson.coordinates.length) {
           this.marker_group = new L.GeoJSON(this.geojson);
       } else {
           this.marker_group = new L.GeoJSON();
@@ -136,7 +136,7 @@
     };
 
     LeafletWidget.prototype.zoomToFit = function() {
-      if (this.geojson === undefined) {
+      if (this.geojson.coordinates.length === 0) {
           return;
       }
       var bounds, coord, coords, northEast, padding, southWest, _i, _len;
@@ -171,6 +171,11 @@
     LeafletWidget.prototype.getJSON = function() {
       if (this.textarea.val()) {
         return JSON.parse(this.textarea.val());
+      } else {
+        return {
+          type: this.options.geom_type,
+          coordinates: []
+        };
       }
     };
 
@@ -184,6 +189,7 @@
 
     LeafletWidget.prototype.clearFeatures = function() {
       this.undo_geojson.push(this.getJSON());
+      this.textarea.val('');
       this.geojson = {
         type: this.options.geom_type,
         coordinates: []
@@ -347,7 +353,7 @@
       this.showHideControls();
       switch (this.options.geom_type) {
         case "Point":
-          this.doPoint(e, false);
+          this.doPoint(e, true);
           break;
         case "MultiPoint":
           this.doMultiPoint(e, true);
