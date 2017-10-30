@@ -72,7 +72,11 @@
       this.map.addLayer(this.control_layer[this.options.primary_map]);
       this.map.addControl(new L.Control.Layers(this.control_layer, {}));
       this.map.setView(new L.LatLng(0, 0), 2);
-      this.marker_group = new L.GeoJSON(this.geojson);
+      if (this.geojson) {
+          this.marker_group = new L.GeoJSON(this.geojson);
+      } else {
+          this.marker_group = new L.GeoJSON();
+      }
       this.map.addLayer(this.marker_group);
       this.zoomToFit();
       this.refreshLayer();
@@ -112,7 +116,7 @@
       } else {
         this.redo.addClass('disabled').removeAttr('href');
       }
-      if (this.geojson.coordinates.length > 0) {
+      if (this.geojson && this.geojson.coordinates.length > 0) {
         return this.clear.removeClass('disabled').attr('href', '#');
       } else {
         return this.clear.addClass('disabled').removeAttr('href');
@@ -132,8 +136,14 @@
     };
 
     LeafletWidget.prototype.zoomToFit = function() {
+      if (this.geojson === undefined) {
+          return;
+      }
       var bounds, coord, coords, northEast, padding, southWest, _i, _len;
       coords = this.geojson.coordinates;
+      if (this.geojson.type === 'Point') {
+          coords = [coords];
+      }
       if (coords && coords.length > 0) {
         padding = 0.005;
         northEast = new L.LatLng(coords[0][1] + padding, coords[0][0] + padding);
@@ -161,11 +171,6 @@
     LeafletWidget.prototype.getJSON = function() {
       if (this.textarea.val()) {
         return JSON.parse(this.textarea.val());
-      } else {
-        return {
-          type: this.options.geom_type,
-          coordinates: []
-        };
       }
     };
 
@@ -235,7 +240,17 @@
         item.click(function() {
           item = self.$(this);
           self.undo_geojson.push(self.getJSON());
-          self.geojson.coordinates.push([parseFloat(item.data('lng')), parseFloat(item.data('lat'))]);
+          if (self.geojson === undefined) {
+              self.geojson = {
+                  type: self.options.geom_type,
+                  coordinates: []
+              };
+          }
+          if (self.options.geom_type === 'Point') {
+              self.geojson.coordinates = [parseFloat(item.data('lng')), parseFloat(item.data('lat'))];
+          } else {
+              self.geojson.coordinates.push([parseFloat(item.data('lng')), parseFloat(item.data('lat'))]);
+          }
           self.showHideControls();
           self.zoomToFit();
           self.refreshLayer();
