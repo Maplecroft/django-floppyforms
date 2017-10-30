@@ -347,7 +347,7 @@
       this.showHideControls();
       switch (this.options.geom_type) {
         case "Point":
-          this.doPoint(e, true);
+          this.doPoint(e, false);
           break;
         case "MultiPoint":
           this.doMultiPoint(e, true);
