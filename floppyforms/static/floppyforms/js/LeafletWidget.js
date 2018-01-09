@@ -53,7 +53,7 @@
       this.search = this.$("#" + this.options.id + "_search");
       this.searchBtn = this.$("#" + this.options.id + "_searchBtn");
       this.results = this.$("#" + options.id + "_search_result");
-      this.searchURL = "http://ws.geonames.net/searchJSON?q={{LOCATION}}&maxRows=100&username=maplecroft";
+      this.searchURL = "https://ws.geonames.net/searchJSON?q={{LOCATION}}&maxRows=100&username=maplecroft";
       this.undo_geojson = [];
       this.redo_geojson = [];
       this.geojson = this.getJSON();

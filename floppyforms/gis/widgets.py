@@ -194,7 +194,7 @@ class BaseLeafletWidget(BaseGeometryWidget):
 
     class Media:
         js = (
-            'http://cdn.leafletjs.com/leaflet-0.4/leaflet.js',
+            'https://cdn.leafletjs.com/leaflet-0.4/leaflet.js',
             'floppyforms/js/LeafletWidget.js',
             'https://api.tiles.mapbox.com/mapbox.js/v2.1.2/mapbox.js'
         )
@@ -209,7 +209,7 @@ class BaseMetacartaWidget(BaseGeometryWidget):
 
     class Media:
         js = (
-            'http://openlayers.org/api/OpenLayers.js',
+            'https://openlayers.org/api/OpenLayers.js',
             'floppyforms/js/MapWidget.js',
         )
 
@@ -221,8 +221,8 @@ class BaseOsmWidget(BaseGeometryWidget):
 
     class Media:
         js = (
-            'http://openlayers.org/api/OpenLayers.js',
-            'http://www.openstreetmap.org/openlayers/OpenStreetMap.js',
+            'https://openlayers.org/api/OpenLayers.js',
+            'https://www.openstreetmap.org/openlayers/OpenStreetMap.js',
             'floppyforms/js/MapWidget.js',
         )
 
@@ -234,7 +234,7 @@ class BaseGMapWidget(BaseGeometryWidget):
 
     class Media:
         js = (
-            'http://openlayers.org/api/OpenLayers.js',
+            'https://openlayers.org/api/OpenLayers.js',
             'floppyforms/js/MapWidget.js',
-            'http://maps.google.com/maps/api/js?sensor=false',
+            'https://maps.google.com/maps/api/js?sensor=false',
         )

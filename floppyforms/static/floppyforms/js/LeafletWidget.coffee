@@ -11,7 +11,7 @@ class LeafletWidget
     @searchBtn = @$("##{ @options.id }_searchBtn")
     @results = @$("##{ options.id }_search_result")
 
-    @searchURL = "http://ws.geonames.net/searchJSON?q={{LOCATION}}&maxRows=100&username=maplecroft"
+    @searchURL = "https://ws.geonames.net/searchJSON?q={{LOCATION}}&maxRows=100&username=maplecroft"
 
     @undo_geojson = []
     @redo_geojson = []
