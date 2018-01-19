@@ -1,4 +1,3 @@
-from urllib import urlencode
 from django.conf import settings
 from django.utils import translation, six
 
@@ -36,7 +35,7 @@ def _google_api_args():
 
     return m
 
-import json
+
 class BaseGeometryWidget(forms.Textarea):
     """
     The base class for rich geometry widgets. Custom widgets may be
@@ -55,17 +54,15 @@ class BaseGeometryWidget(forms.Textarea):
     is_collection = False
     geom_type = 'GEOMETRY'
 
-
     map_attrs = (
         'map_width', 'map_height', 'map_srid', 'display_wkt', 'as_geojson',
-        'mapbox_token', 'map_ids', 'primary_map'
+        'mapquest_token', 'map_ids', 'primary_map',
     )
 
     def __init__(self, *args, **kwargs):
         super(BaseGeometryWidget, self).__init__(*args, **kwargs)
         attrs = kwargs.pop('attrs', {})
         setattr(self, 'map_ids', getattr(self, 'map_ids', None))
-        # self.map_ids = json.dumps(self.map_ids)
         for key in self.map_attrs:
             setattr(self, key, attrs.pop(key, getattr(self, key, None)))
 
@@ -194,13 +191,14 @@ class BaseLeafletWidget(BaseGeometryWidget):
 
     class Media:
         js = (
-            'https://cdn.leafletjs.com/leaflet-0.4/leaflet.js',
             'floppyforms/js/LeafletWidget.js',
-            'https://api.tiles.mapbox.com/mapbox.js/v2.1.2/mapbox.js'
+            'https://unpkg.com/leaflet@1.2.0/dist/leaflet-src.js',
+            'https://api.mqcdn.com/sdk/mapquest-js/v1.2.0/mapquest-core.js',
         )
         css = ({
             'all': (
-                'https://api.tiles.mapbox.com/mapbox.js/v2.1.3/mapbox.css',
+                'https://unpkg.com/leaflet@1.2.0/dist/leaflet.css',
+                'https://api.mqcdn.com/sdk/mapquest-js/v1.2.0/mapquest-maps.css',
             )
         })
 

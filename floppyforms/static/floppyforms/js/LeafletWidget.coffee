@@ -2,7 +2,12 @@ class LeafletWidget
 
   constructor: (@options) ->
     @$ = $ or django.jQuery
-    @map = new L.Map(@options.map_id)
+    @map = new L.Map(
+      @options.map_id
+      center: [37.7749, -122.4194]
+      layers: L.mapquest.tileLayer(@options.primary_map.toLowerCase())
+      zoom: 6
+    )
     @textarea = @$("##{ @options.id }")
     @clear = @$("##{ @options.id }_clear")
     @undo = @$("##{ @options.id }_undo")
@@ -17,19 +22,15 @@ class LeafletWidget
     @redo_geojson = []
     @geojson = @getJSON()
 
-    L.mapbox.accessToken = @options.mapbox_token
+    L.mapquest.key = @options.mapquest_token
 
     @map.options.minZoom = 1
     @map.options.maxZoom = 18
 
-    @map.addControl(L.mapbox.geocoderControl('mapbox.places-v1', {
-        autocomplete: true
-    }));
-
     # Extract map layers from list of two tuples then add primary map
     @control_layer = {}
     for name_id in @options.map_ids
-      this.control_layer[name_id[0]] = new L.mapbox.tileLayer('maplecroft.' + name_id[1])
+      this.control_layer[name_id[0]] = new L.mapquest.tileLayer(name_id[1] )
 
     @map.addLayer(this.control_layer[@options.primary_map])
     @map.addControl(new L.Control.Layers(this.control_layer, {}));
